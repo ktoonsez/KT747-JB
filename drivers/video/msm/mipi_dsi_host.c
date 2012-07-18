@@ -1149,10 +1149,12 @@ int mipi_dsi_cmds_tx(struct msm_fb_data_type *mfd,
 		mipi_dsi_cmd_dma_add(tp, cm);
 		mipi_dsi_cmd_dma_tx(tp);
 		if (cm->wait)
+		{
 			if (cm->wait >= 20)
 				msleep(cm->wait);
 			else
 				mdelay(cm->wait);
+		}
 		cm++;
 	}
 
