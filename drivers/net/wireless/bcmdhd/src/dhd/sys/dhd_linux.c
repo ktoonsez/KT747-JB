@@ -694,12 +694,13 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 #endif
 
 			/* disable pkt filter */
-			if (dhd_pkt_filter_enable && !dhd->dhcp_in_progress) {
+			/* override: keep pkt filters active when screen is on */
+			/*if (dhd_pkt_filter_enable && !dhd->dhcp_in_progress) {
 				int i;
 				for (i = 0; i < dhd->pktfilter_count; i++)
 					dhd_pktfilter_offload_enable(dhd, dhd->pktfilter[i],
 						0, dhd_master_mode);
-			}
+			}*/
 #ifdef PASS_ALL_MCAST_PKTS
 			allmulti = 1;
 			bcm_mkiovar("allmulti", (char *)&allmulti, 4, iovbuf, sizeof(iovbuf));

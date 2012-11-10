@@ -520,7 +520,7 @@ int wl_cfg80211_set_btcoex_dhcp(struct net_device *dev, char *command)
 		dhd->dhcp_in_progress = 1;
 
 		/* Disable packet filtering */
-		if (dhd_pkt_filter_enable && dhd->early_suspended) {
+		if (dhd_pkt_filter_enable) {
 			WL_ERR(("DHCP in progressing , disable packet filter!!!\n"));
 			for (i = 0; i < dhd->pktfilter_count; i++) {
 				dhd_pktfilter_offload_enable(dhd, dhd->pktfilter[i],
@@ -577,7 +577,7 @@ int wl_cfg80211_set_btcoex_dhcp(struct net_device *dev, char *command)
 	WL_ERR(("%s: DHCP is complete \n", __FUNCTION__));
 
 		/* Enable packet filtering */
-		if (dhd_pkt_filter_enable && dhd->early_suspended) {
+		if (dhd_pkt_filter_enable) {
 			WL_ERR(("DHCP is complete , enable packet filter!!!\n"));
 			for (i = 0; i < dhd->pktfilter_count; i++) {
 				dhd_pktfilter_offload_enable(dhd, dhd->pktfilter[i],
