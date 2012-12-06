@@ -3815,7 +3815,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	/* Setup default defintions for pktfilter */
 	dhd->pktfilter_count = 5;
 	/* Setup filter to allow only unicast */
-	dhd->pktfilter[0] = "100 0 0 0 0x01 0x00";
+	dhd->pktfilter[0] = "100 0 0 0 0x010000000000000000000000000020 0x000000000000000000000000000000";
 	dhd->pktfilter[1] = NULL;
 	dhd->pktfilter[2] = NULL;
 	dhd->pktfilter[3] = NULL;
