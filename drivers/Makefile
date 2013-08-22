@@ -134,6 +134,7 @@ obj-$(CONFIG_VIBETONZ)		+= motor/
 obj-$(CONFIG_IRDA_MC96)		+= irda/
 
 obj-$(CONFIG_FELICA)		+= felica/
+obj-y				+= exfat/
 
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
