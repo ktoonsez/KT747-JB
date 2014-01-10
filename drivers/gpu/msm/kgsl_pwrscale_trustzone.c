@@ -132,7 +132,7 @@ static void tz_wake(struct kgsl_device *device, struct kgsl_pwrscale *pwrscale)
 	struct tz_priv *priv = pwrscale->priv;
 	if (device->state != KGSL_STATE_NAP &&
 #ifdef CONFIG_MSM_KGSL_SIMPLE_GOV
-		&& device->pwrctrl.restore_slumber == 0
+		device->pwrctrl.restore_slumber == 0 &&
 		(priv->governor == TZ_GOVERNOR_ONDEMAND ||
 		 priv->governor == TZ_GOVERNOR_SIMPLE))
 #else
