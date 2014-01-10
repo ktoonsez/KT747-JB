@@ -74,6 +74,9 @@ static unsigned int kthermal_limit;
 extern void apenable_auto_hotplug(bool state);
 extern int elevator_change_relay(const char *name, int screen_status);
 
+extern ssize_t get_gpu_vdd_levels_str(char *buf);
+extern void set_gpu_vdd_levels(int uv_tbl[]);
+
 int GLOBALKT_MIN_FREQ_LIMIT = 378000;
 int GLOBALKT_MAX_FREQ_LIMIT = 1512000;
 
@@ -790,6 +793,21 @@ out:
 	return i;
 }
 
+ssize_t show_GPU_mV_table(struct cpufreq_policy *policy, char *buf)
+{
+	int modu = 0;
+	return get_gpu_vdd_levels_str(buf);
+}
+
+ssize_t store_GPU_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int u[3];
+	ret = sscanf(buf, "%d %d %d", &u[0], &u[1], &u[2]);
+	set_gpu_vdd_levels(u);
+	return count;
+}
+
 static ssize_t show_cpus(const struct cpumask *mask, char *buf)
 {
 	ssize_t i = 0;
@@ -1112,6 +1130,7 @@ cpufreq_freq_attr_rw(disable_som_call_in_progress);
 cpufreq_freq_attr_rw(freq_lock);
 cpufreq_freq_attr_rw(UV_mV_table);
 cpufreq_freq_attr_ro(UV_mV_table_stock);
+cpufreq_freq_attr_rw(GPU_mV_table);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -1132,6 +1151,7 @@ static struct attribute *default_attrs[] = {
 	&scaling_setspeed.attr,
 	&UV_mV_table.attr,
 	&UV_mV_table_stock.attr,
+	&GPU_mV_table.attr,
 	&scaling_booted.attr,
 	&touch_booster_first_freq_limit.attr,
 	&touch_booster_second_freq_limit.attr,
