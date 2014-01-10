@@ -184,13 +184,6 @@ static ssize_t brightness_level_show(struct device *dev,
 	return count;
 }
 
-extern void boostpulse_relay_kt();
-static bool kt_is_active_benabled = false;
-void kt_is_active_benabled_touchkey(bool val)
-{
-	kt_is_active_benabled = val;
-}
-
 static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 {
 	struct cypress_touchkey_info *info = dev_id;
@@ -241,11 +234,7 @@ static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 #if defined(SEC_TOUCHKEY_DEBUG)
 	TOUCHKEY_LOG(info->keycode[code], press);
 #endif
-	if (kt_is_active_benabled && press == 1 && (info->keycode[code] == 158 || info->keycode[code] == 139))
-	{
-		boostpulse_relay_kt();
-		//pr_alert("KEY_PRESS: %d-%d\n", info->keycode[code], press);
-	}
+
 	if (touch_is_pressed && press) {
 		printk(KERN_ERR "[TouchKey] don't send event because touch is pressed.\n");
 		printk(KERN_ERR "[TouchKey] touch_pressed = %d\n",

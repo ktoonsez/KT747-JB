@@ -39,13 +39,9 @@
 #include <trace/events/block.h>
 
 #include "blk.h"
-#include "kt_save_sched.h"
 
 static DEFINE_SPINLOCK(elv_list_lock);
 static LIST_HEAD(elv_list);
-
-static struct request_queue *globalq[5];
-static unsigned int queue_size = 0;
 
 /*
  * Merge hash stuff.
@@ -255,7 +251,6 @@ int elevator_init(struct request_queue *q, char *name)
 	q->last_merge = NULL;
 	q->end_sector = 0;
 	q->boundary_rq = NULL;
-	q->index = queue_size;
 
 	if (name) {
 		e = elevator_get(name);
@@ -290,11 +285,7 @@ int elevator_init(struct request_queue *q, char *name)
 		return -ENOMEM;
 	}
 
-	q->index = queue_size;
 	elevator_attach(q, eq, data);
-	globalq[queue_size] = q;
-	pr_alert("ELEVATOR_INIT: %s-%d\n", q->elevator->elevator_type->elevator_name, queue_size);
-	queue_size += 1;
 	return 0;
 }
 EXPORT_SYMBOL(elevator_init);
@@ -1035,33 +1026,12 @@ fail_register:
 	return err;
 }
 
-int elevator_change_relay(const char *name, int screen_status)
-{
-	int i = 0;
-	load_prev_screen_on = screen_status;
-	pr_alert("CHANGE_SCHEDULER0-%d\n", load_prev_screen_on);
-	for (i = 0; i < queue_size; i++)
-	{
-		if (i != 1 && i != 2)
-			elevator_change(globalq[i], name);
-	}
-	load_prev_screen_on = 0;
-	return 0;
-}
-
-int isload_prev_screen_on(void)
-{
-	return load_prev_screen_on;
-}
-
-extern void set_cur_sched(const char *name);
 /*
  * Switch this queue to the given IO scheduler.
  */
 int elevator_change(struct request_queue *q, const char *name)
 {
 	char elevator_name[ELV_NAME_MAX];
-	int ret = 0;
 	struct elevator_type *e;
 
 	if (!q->elevator)
@@ -1078,11 +1048,8 @@ int elevator_change(struct request_queue *q, const char *name)
 		elevator_put(e);
 		return 0;
 	}
-	pr_alert("CHANGE_SCHEDULER1: %s-%s\n", name, q->elevator->elevator_type->elevator_name);
-	ret = elevator_switch(q, e);
-	pr_alert("CHANGE_SCHEDULER2: %s-%s-%d\n", name, q->elevator->elevator_type->elevator_name, ret);
-	
-	return ret;
+
+	return elevator_switch(q, e);
 }
 EXPORT_SYMBOL(elevator_change);
 
@@ -1095,9 +1062,6 @@ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
 		return count;
 
 	ret = elevator_change(q, name);
-	globalq[q->index] = q;
-	pr_alert("IOSCHED_STORE: %s-%s-%s-%d\n", name, q->elevator->elevator_type->elevator_name, globalq[q->index]->elevator->elevator_type->elevator_name, q->index);
-	set_cur_sched(name);
 	if (!ret)
 		return count;
 

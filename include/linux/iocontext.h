@@ -31,13 +31,6 @@ struct cfq_io_context {
  * I/O subsystem state of the associated processes.  It is refcounted
  * and kmalloc'ed. These could be shared between processes.
  */
-
-enum {
-	IOC_CFQ_IOPRIO_CHANGED,
-	IOC_BFQ_IOPRIO_CHANGED,
-	IOC_IOPRIO_CHANGED_BITS
-};
-
 struct io_context {
 	atomic_long_t refcount;
 	atomic_t nr_tasks;
@@ -60,8 +53,6 @@ struct io_context {
 
 	struct radix_tree_root radix_root;
 	struct hlist_head cic_list;
-	struct radix_tree_root bfq_radix_root;
-	struct hlist_head bfq_cic_list;
 	void __rcu *ioc_data;
 };
 

@@ -43,10 +43,6 @@ struct cpufreq_stats {
 	unsigned int *trans_table;
 #endif
 };
-//static unsigned int gisenable_oc = -1;
-static int greal_cnt=0;
-extern unsigned int get_enable_oc();
-extern int get_the_freq_table(int cnt, int vdd_uv[]);
 
 static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
 
@@ -84,26 +80,16 @@ static ssize_t show_total_trans(struct cpufreq_policy *policy, char *buf)
 static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
 {
 	ssize_t len = 0;
-	int steps[FREQ_STEPS];
 	int i;
-	int real_cnt=0;
 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
 	if (!stat)
 		return 0;
-
-	//reloadTable(stat);
-	real_cnt = get_the_freq_table(FREQ_STEPS, steps);
-	for (i = 0; i < greal_cnt; i++) {
-		stat->freq_table[i] = steps[i];
-	}
-
 	cpufreq_stats_update(stat->cpu);
-	for (i = 0; i < greal_cnt; i++) {
+	for (i = 0; i < stat->state_num; i++) {
 		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
 			(unsigned long long)
 			cputime64_to_clock_t(stat->time_in_state[i]));
 	}
-	//pr_alert("show_time_in_state: %d-%d-%d\n", stat->state_num, real_cnt, greal_cnt);
 	return len;
 }
 
@@ -212,9 +198,6 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	struct cpufreq_policy *data;
 	unsigned int alloc_size;
 	unsigned int cpu = policy->cpu;
-	int real_cnt=0;
-	int steps[FREQ_STEPS];
-
 	if (per_cpu(cpufreq_stats_table, cpu))
 		return -EBUSY;
 	stat = kzalloc(sizeof(struct cpufreq_stats), GFP_KERNEL);
@@ -234,19 +217,12 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	stat->cpu = cpu;
 	per_cpu(cpufreq_stats_table, cpu) = stat;
 
-	real_cnt = get_the_freq_table(FREQ_STEPS, steps);
-	for (i = 0; i < real_cnt; i++) {
-		table[i].frequency = steps[i];
-	}
-	//unsigned int lastfreq=0;
 	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
 		unsigned int freq = table[i].frequency;
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
 		count++;
-		//lastfreq = freq;
 	}
-	//pr_alert("cpufreq_stats_create_table-1: %d\n", count);
 
 	alloc_size = count * sizeof(int) + count * sizeof(cputime64_t);
 
@@ -269,7 +245,7 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 		unsigned int freq = table[i].frequency;
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
-		//if (freq_table_get_index(stat, freq) == -1)
+		if (freq_table_get_index(stat, freq) == -1)
 			stat->freq_table[j++] = freq;
 	}
 	stat->state_num = j;
@@ -278,8 +254,6 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	stat->last_index = freq_table_get_index(stat, policy->cur);
 	spin_unlock(&cpufreq_stats_lock);
 	cpufreq_cpu_put(data);
-	//pr_alert("cpufreq_stats_create_table-2: %d-%d-%d\n", stat->state_num, j, stat->last_index);
-	greal_cnt = j;
 	return 0;
 error_out:
 	cpufreq_cpu_put(data);

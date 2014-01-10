@@ -2418,12 +2418,6 @@ config MSM_DCVS
 	  algorithm and the algorithm returns a frequency for the core which is
 	  passed to the frequency change driver.
 
-config SUPER_CLOCKED
-	bool "Enable SUPER_CLOCKED option"
-	default n
-	help
-	  SUPER_CLOCKED up to 2.1 GHz
-
 config MSM_CPU_PWRCTL
 	bool "Ensures that krait droop detectors are always off"
 	help

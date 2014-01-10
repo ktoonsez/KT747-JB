@@ -175,12 +175,9 @@ static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
 /**
  * show_available_freqs - show available frequencies for the specified CPU
  */
-extern unsigned int get_enable_oc(void);
-
 static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
 {
 	unsigned int i = 0;
-	unsigned int stepCnt = FREQ_STEPS;
 	unsigned int cpu = policy->cpu;
 	ssize_t count = 0;
 	struct cpufreq_frequency_table *table;
@@ -190,9 +187,7 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
 
 	table = per_cpu(cpufreq_show_table, cpu);
 
-	if (get_enable_oc() == 0)
-		stepCnt = stepCnt - FREQ_TABLE_SIZE_OFFSET;
-	for (i = 0; i < stepCnt; i++) { //(table[i].frequency != CPUFREQ_TABLE_END); i++) {
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
 			continue;
 		count += sprintf(&buf[count], "%d ", table[i].frequency);

@@ -58,10 +58,6 @@ static inline int cpufreq_unregister_notifier(struct notifier_block *nb,
 #define CPUFREQ_POLICY_POWERSAVE	(1)
 #define CPUFREQ_POLICY_PERFORMANCE	(2)
 
-/* Minimum frequency cutoff to notify the userspace about cpu utilization
- * changes */
-#define MIN_CPU_UTIL_NOTIFY   40
-
 /* Frequency values here are CPU kHz so that hardware which doesn't run
  * with some frequencies can complain without having to guess what per
  * cent / per mille means.
@@ -103,7 +99,7 @@ struct cpufreq_policy {
 	unsigned int		cur;    /* in kHz, only needed if cpufreq
 					 * governors are used */
 #if defined(__MP_DECISION_PATCH__)
-	unsigned int            util;  /* in %, CPU utilization */
+	unsigned int            utils;  /* in %, CPU utilization */
 #endif
 	unsigned int		policy; /* see above */
 	struct cpufreq_governor	*governor; /* see below */
@@ -350,27 +346,14 @@ static inline unsigned int cpufreq_quick_get(unsigned int cpu)
 
 
 #ifdef CONFIG_SEC_DVFS
-//#define TOUCH_BOOSTER_FIRST_FREQ_LIMIT 1134000
-//#define TOUCH_BOOSTER_SECOND_FREQ_LIMIT 810000
-//#define TOUCH_BOOSTER_FIRST_FREQ_LIMIT 702000
-//#define TOUCH_BOOSTER_SECOND_FREQ_LIMIT 594000
-//#define TOUCH_BOOSTER_FREQ_LIMIT 486000
+#define TOUCH_BOOSTER_FIRST_FREQ_LIMIT 1134000
+#define TOUCH_BOOSTER_SECOND_FREQ_LIMIT 810000
+#define TOUCH_BOOSTER_FREQ_LIMIT 486000
 
 #define LOW_MAX_FREQ_LIMIT 1188000
 
-extern int GLOBALKT_MIN_FREQ_LIMIT;
-//#define MAX_FREQ_LIMIT 1512000
-extern int GLOBALKT_MAX_FREQ_LIMIT;
-
-#ifdef CONFIG_SUPER_CLOCKED
-	#define FREQ_TABLE_SIZE		38
-	#define FREQ_TABLE_SIZE_OFFSET	6
-	#define FREQ_STEPS		30
-#else
-	#define FREQ_TABLE_SIZE		36
-	#define FREQ_TABLE_SIZE_OFFSET	4
-	#define FREQ_STEPS		28
-#endif
+#define MIN_FREQ_LIMIT 384000
+#define MAX_FREQ_LIMIT 1512000
 
 enum {
 	SET_MIN = 0,
