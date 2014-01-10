@@ -49,6 +49,9 @@ static int enable_le;
 
 /* Handle HCI Event packets */
 
+extern void set_bluetooth_state(unsigned int val, __u8	dev_name[248]);
+extern void set_bluetooth_state_kt(bool val);
+
 static void hci_cc_inquiry_cancel(struct hci_dev *hdev, struct sk_buff *skb)
 {
 	__u8 status = *((__u8 *) skb->data);
@@ -1417,11 +1420,19 @@ static inline void hci_conn_complete_evt(struct hci_dev *hdev, struct sk_buff *s
 
 		if (conn->type == ACL_LINK) {
 			conn->state = BT_CONFIG;
+			pr_info("BLUETOOTH  BT_CONFIG\n");
+			set_bluetooth_state(1, hdev->dev_name);
+			set_bluetooth_state_kt(true);
 			hci_conn_hold(conn);
 			conn->disc_timeout = HCI_DISCONN_TIMEOUT;
 			mgmt_connected(hdev->id, &ev->bdaddr);
 		} else
+		{
 			conn->state = BT_CONNECTED;
+			pr_info("BLUETOOTH  BT_CONNECTED\n");
+			set_bluetooth_state(1, hdev->dev_name);
+			set_bluetooth_state_kt(true);
+		}
 
 		hci_conn_hold_device(conn);
 		hci_conn_add_sysfs(conn);
@@ -1450,6 +1461,9 @@ static inline void hci_conn_complete_evt(struct hci_dev *hdev, struct sk_buff *s
 		}
 	} else {
 		conn->state = BT_CLOSED;
+		pr_info("BLUETOOTH  BT_CLOSED\n");
+		set_bluetooth_state(0, hdev->dev_name);
+		set_bluetooth_state_kt(false);
 		if (conn->type == ACL_LINK)
 			mgmt_connect_failed(hdev->id, &ev->bdaddr, ev->status);
 	}
@@ -2978,10 +2992,16 @@ void hci_event_packet(struct hci_dev *hdev, struct sk_buff *skb)
 
 	case HCI_EV_DISCONN_COMPLETE:
 		hci_disconn_complete_evt(hdev, skb);
+		pr_info("HCI_EV_DISCONN_COMPLETE\n");
+		set_bluetooth_state(0, hdev->dev_name);
+		set_bluetooth_state_kt(false);
 		break;
 
 	case HCI_EV_AUTH_COMPLETE:
 		hci_auth_complete_evt(hdev, skb);
+		pr_info("HCI_EV_AUTH_COMPLETE\n");
+		set_bluetooth_state(1, hdev->dev_name);
+		set_bluetooth_state_kt(true);
 		break;
 
 	case HCI_EV_REMOTE_NAME:
@@ -3090,6 +3110,9 @@ void hci_event_packet(struct hci_dev *hdev, struct sk_buff *skb)
 
 	case HCI_EV_SIMPLE_PAIR_COMPLETE:
 		hci_simple_pair_complete_evt(hdev, skb);
+		pr_info("HCI_EV_SIMPLE_PAIR_COMPLETE\n");
+		set_bluetooth_state(1, hdev->dev_name);
+		set_bluetooth_state_kt(true);
 		break;
 
 	case HCI_EV_REMOTE_HOST_FEATURES:
