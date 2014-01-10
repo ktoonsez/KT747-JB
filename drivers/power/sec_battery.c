@@ -61,6 +61,17 @@
 
 static int is_charging_disabled;
 static unsigned int sec_bat_recovery_mode;
+static bool ktoonservative_is_active = false;
+unsigned int gbatt_lvl_low = 0;
+unsigned int gbatt_lvl_high = 0;
+unsigned int gmhz_lvl_low = 0;
+unsigned int gmhz_lvl_high = 0;
+unsigned int gbatt_soc = 0;
+unsigned int gbatt_chg = 0;
+unsigned int gdisable_chrg = 0;
+
+extern unsigned int set_battery_max_level(unsigned int value);
+static unsigned int Lscreen_off_scaling_mhz_orig = 0;
 
 enum cable_type_t {
 	CABLE_TYPE_NONE = 0,
@@ -1608,9 +1619,43 @@ static void sec_bat_charging_time_management(struct sec_bat_info *info)
 	return;
 }
 
+void ktoonservative_is_active_batt(bool val, unsigned int batt_lvl_low, unsigned int batt_lvl_high, unsigned int mhz_lvl_low, unsigned int mhz_lvl_high, unsigned int disable_chrg)
+{
+	ktoonservative_is_active = val;
+	gbatt_lvl_low = batt_lvl_low;
+	gbatt_lvl_high = batt_lvl_high;
+	gmhz_lvl_low = mhz_lvl_low;
+	gmhz_lvl_high = mhz_lvl_high;
+	gdisable_chrg = disable_chrg;
+}
+
+unsigned int get_batt_level(void)
+{
+	//Exit if user disables battery control while plugged in
+	if (gdisable_chrg == 1 && (gbatt_chg == 1 || gbatt_chg == 4))
+		return Lscreen_off_scaling_mhz_orig;
+
+	if (gbatt_lvl_low > 0 && gmhz_lvl_low > 0)
+	{
+		if (gbatt_soc <= gbatt_lvl_low)
+			return gmhz_lvl_low;
+			
+	}
+	if (gbatt_lvl_high > 0 && gmhz_lvl_high > 0)
+	{
+		if (gbatt_soc <= gbatt_lvl_high)
+			return gmhz_lvl_high;
+	}
+	if ((gbatt_lvl_low > 0 && gbatt_soc > gbatt_lvl_low) || (gmhz_lvl_high > 0 && gbatt_soc > gbatt_lvl_high))
+		return Lscreen_off_scaling_mhz_orig;
+	else
+		return 0;
+}
+
 static void sec_bat_monitor_work(struct work_struct *work)
 {
 	int i;
+	unsigned int mhz_lvl = 0;
 	struct sec_bat_info *info = container_of(work, struct sec_bat_info,
 						 monitor_work);
 	struct power_supply *psy_fg =
@@ -1692,6 +1737,16 @@ static void sec_bat_monitor_work(struct work_struct *work)
 #ifdef ADJUST_RCOMP_WITH_TEMPER
 	sec_fg_update_temper(info);
 #endif
+	gbatt_soc = info->batt_soc;
+	gbatt_chg = info->charging_status;
+	//Check for battery level to see if we need to set new policy MAX
+	if (ktoonservative_is_active)
+	{
+		mhz_lvl = get_batt_level();
+		if (mhz_lvl > 0)
+			Lscreen_off_scaling_mhz_orig = set_battery_max_level(mhz_lvl);
+	}
+	
 	pr_info("[battery] level(%d), vcell(%d), therm(%d)\n",
 		info->batt_soc, info->batt_vcell, info->batt_temp);
 	pr_info("[battery] cable_type(%d), chg_status(%d), health(%d)\n",
