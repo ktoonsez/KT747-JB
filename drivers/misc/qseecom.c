@@ -673,8 +673,8 @@ static int qseecom_load_app(struct qseecom_dev_handle *data, void __user *argp)
 	if (ret)
 		pr_warning("Unable to vote for SFPB clock");
 
-	pr_warn("App (%s) does not exist, loading apps for first time\n",
-			(char *)(load_img_req.img_name));
+	//pr_warn("App (%s) does not exist, loading apps for first time\n",
+			//(char *)(load_img_req.img_name));
 	/* Get the handle of the shared fd */
 	ihandle = ion_import_fd(qseecom.ion_clnt,
 				load_img_req.ifd_data_fd);
@@ -723,8 +723,8 @@ static int qseecom_load_app(struct qseecom_dev_handle *data, void __user *argp)
 		}
 	}
 	if (resp.result != QSEOS_RESULT_SUCCESS) {
-		pr_err("scm_call failed resp.result unknown, %d\n",
-				resp.result);
+		//pr_err("scm_call failed resp.result unknown, %d\n",
+		//		resp.result);
 		if (!IS_ERR_OR_NULL(ihandle))
 			ion_free(qseecom.ion_clnt, ihandle);
 		qsee_disable_clock_vote(CLK_SFPB);
@@ -1951,8 +1951,8 @@ static long qseecom_ioctl(struct file *file, unsigned cmd,
 		ret = qseecom_load_app(data, argp);
 		atomic_dec(&data->ioctl_count);
 		mutex_unlock(&app_access_lock);
-		if (ret)
-			pr_err("failed load_app request: %d\n", ret);
+		//if (ret)
+		//	pr_err("failed load_app request: %d\n", ret);
 		break;
 	}
 	case QSEECOM_IOCTL_UNLOAD_APP_REQ: {
@@ -2075,7 +2075,7 @@ static int qseecom_release(struct inode *inode, struct file *file)
 	int ret = 0;
 
 	if (data->released == false) {
-		pr_warn("data->released == false\n");
+		//pr_warn("data->released == false\n");
 		if (data->service)
 			ret = qseecom_unregister_listener(data);
 		else

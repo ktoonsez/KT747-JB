@@ -55,6 +55,8 @@ scripts/basic/fixdep
 scripts/conmakehash
 scripts/kallsyms
 scripts/kconfig/conf
+scripts/selinux/*
+security/selinux/*
 scripts/kconfig/lex.zconf.c
 scripts/kconfig/zconf.hash.c
 scripts/kconfig/zconf.tab.c
