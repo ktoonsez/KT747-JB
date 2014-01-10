@@ -323,13 +323,6 @@ static struct attribute_group gpio_keys_attr_group = {
 	.attrs = gpio_keys_attrs,
 };
 
-extern void boostpulse_relay_kt();
-static bool kt_is_active_benabled = false;
-void kt_is_active_benabled_gpio(bool val)
-{
-	kt_is_active_benabled = val;
-}
-
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
@@ -343,15 +336,16 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	sec_debug_check_crash_key(button->code, state);
 #endif
 
+#if defined(CONFIG_MACH_JAGUAR)
+	pr_info("%s:key code(%d) value(%d)\n",
+			__func__, button->code, state);
+#endif
+
+	printk(KERN_ALERT" %s:key code(%d) value(%d)\n", __func__, button->code, state);
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
-		if (kt_is_active_benabled && button->code == 172)
-		{
-			boostpulse_relay_kt();
-			//pr_alert("BUTTON_PRESS: %d-%d\n", button->code, count);
-		}
 		if (button->code == KEY_HOMEPAGE && count == 1) {
 			if (!!state) {
 				input_event(input, type, button->code,
@@ -408,6 +402,8 @@ static irqreturn_t gpio_keys_isr(int irq, void *dev_id)
 	else
 		schedule_work(&bdata->work);
 
+	printk(KERN_ALERT" gpio-keys (keypad) handled : %s\n",__func__);
+	
 	return IRQ_HANDLED;
 }
 

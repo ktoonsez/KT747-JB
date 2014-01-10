@@ -111,7 +111,6 @@ static int max_timeout = 10000;
 
 static int vibrator_value = -1;
 static int vibrator_work;
-int8_t vibe_strength = 120;
 
 #define TEST_MODE_TIME 10000
 
@@ -128,9 +127,9 @@ static int set_vibetonz(int timeout)
 			ImmVibeSPI_ForceOut_AmpDisable(0);
 		}
 	} else {
-		//DbgOut((KERN_INFO "tspdrv: ENABLE\n"));
+		DbgOut((KERN_INFO "tspdrv: ENABLE\n"));
 		if (vibrator_drvdata.vib_model == HAPTIC_PWM) {
-			strength = vibe_strength;
+			strength = 120;
 			/* 90% duty cycle */
 			ImmVibeSPI_ForceOut_SetSamples(0, 8, 1, &strength);
 		} else { /* HAPTIC_MOTOR */
@@ -148,28 +147,6 @@ static void _set_vibetonz_work(struct work_struct *unused)
 
 	return;
 }
-
-
-static ssize_t show_vibe_strength(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", vibe_strength);
-}
-
-static ssize_t store_vibe_strength(struct device *dev, struct device_attribute *attr,const char *buf, size_t size)
-{
-	int value;
-	sscanf(buf, "%d", &value);
-	if(value < 5)
-		value = 5;
-	else if(value > 126)
-		value = 126;
-
-	vibe_strength = value;
-
-	return vibe_strength;
-}
-
-static DEVICE_ATTR(vibe_strength, 0777, show_vibe_strength, store_vibe_strength);
 
 static enum hrtimer_restart vibetonz_timer_func(struct hrtimer *timer)
 {
@@ -200,7 +177,7 @@ static int get_time_for_vibetonz(struct timed_output_dev *dev)
 
 static void enable_vibetonz_from_user(struct timed_output_dev *dev, int value)
 {
-	//printk(KERN_DEBUG "tspdrv: Enable time = %d msec\n", value);
+	printk(KERN_DEBUG "tspdrv: Enable time = %d msec\n", value);
 	hrtimer_cancel(&timer);
 
 	/* set_vibetonz(value); */
@@ -236,10 +213,6 @@ static void vibetonz_start(void)
 	if (ret)
 		DbgOut((KERN_ERR
 		"tspdrv: timed_output_dev_register is fail\n"));
-
-	ret = device_create_file(timed_output_vt.dev, &dev_attr_vibe_strength);
-	if(ret)
-	    printk(KERN_ERR "[VIBETONZ] vibe_strength device file create failed\n");
 }
 
 /* File IO */
@@ -389,6 +362,7 @@ defined(CONFIG_MACH_GOGH) || defined(CONFIG_MACH_ESPRESSO_ATT)
 	} else {
 		pdata = pdev->dev.platform_data;
 		vibrator_drvdata.vib_model = pdata->vib_model;
+#ifndef CONFIG_HAPTIC_DRV2603
 		vibrator_drvdata.is_pmic_haptic_pwr_en = \
 						pdata->is_pmic_haptic_pwr_en;
 		if (pdata->is_pmic_haptic_pwr_en)
@@ -397,6 +371,7 @@ defined(CONFIG_MACH_GOGH) || defined(CONFIG_MACH_ESPRESSO_ATT)
 		else
 			vibrator_drvdata.haptic_pwr_en_gpio = \
 				pdata->haptic_pwr_en_gpio;
+#endif
 		if (pdata->vib_model == HAPTIC_PWM) {
 			vibrator_drvdata.vib_pwm_gpio = pdata->vib_pwm_gpio;
 			vibrator_drvdata.is_pmic_vib_en = \
@@ -572,6 +547,7 @@ static ssize_t write(struct file *file, const char *buf, size_t count,
 			** (Should never happen).
 			*/
 			DbgOut((KERN_EMERG "tspdrv: invalid buffer index.\n"));
+			return 0;
 		}
 
 		/* Check bit depth */
@@ -592,6 +568,7 @@ static ssize_t write(struct file *file, const char *buf, size_t count,
 			** (Should never happen).
 			*/
 			DbgOut((KERN_EMERG "tspdrv: invalid data size.\n"));
+			return 0;
 		}
 
 		/* Check actuator index */

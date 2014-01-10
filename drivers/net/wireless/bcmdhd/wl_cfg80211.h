@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfg80211.h 366811 2012-11-05 13:49:17Z $
+ * $Id: wl_cfg80211.h 426566 2013-09-30 05:51:44Z $
  */
 
 #ifndef _wl_cfg80211_h_
@@ -72,17 +72,17 @@ struct wl_ibss;
 #define	WL_ERR(args)									\
 do {										\
 	if (wl_dbg_level & WL_DBG_ERR) {				\
-			printk(KERN_INFO "CFG80211-INFO2) %s : ", __func__);	\
+			printk(KERN_INFO CFG80211_ERROR_TEXT "%s : ", __func__);	\
 			printk args;						\
-		} 								\
+		}								\
 } while (0)
 #else /* defined(DHD_DEBUG) */
 #define	WL_ERR(args)									\
 do {										\
 	if ((wl_dbg_level & WL_DBG_ERR) && net_ratelimit()) {				\
-			printk(KERN_INFO "CFG80211-INFO2) %s : ", __func__);	\
+			printk(KERN_INFO CFG80211_ERROR_TEXT "%s : ", __func__);	\
 			printk args;						\
-		} 								\
+		}								\
 } while (0)
 #endif /* defined(DHD_DEBUG) */
 
@@ -163,11 +163,14 @@ do {									\
 #define WL_MIN_DWELL_TIME	100
 #define WL_LONG_DWELL_TIME 	1000
 #define IFACE_MAX_CNT 		2
-#define WL_SCAN_CONNECT_DWELL_TIME_MS 		200
-#define WL_SCAN_JOIN_PROBE_INTERVAL_MS 		20
+#define WL_SCAN_CONNECT_DWELL_TIME_MS 		300
+#define WL_SCAN_JOIN_PROBE_INTERVAL_MS 		60
 #define WL_SCAN_JOIN_ACTIVE_DWELL_TIME_MS 	320
 #define WL_SCAN_JOIN_PASSIVE_DWELL_TIME_MS 	400
 #define WL_AF_TX_MAX_RETRY 	5
+
+#define WL_AF_SEARCH_TIME_MAX           450
+#define WL_AF_TX_EXTRA_TIME_MAX         200
 
 #define WL_SCAN_TIMER_INTERVAL_MS	8000 /* Scan timeout */
 #define WL_CHANNEL_SYNC_RETRY 	5
@@ -177,6 +180,8 @@ do {									\
 #ifndef WL_SCB_TIMEOUT
 #define WL_SCB_TIMEOUT	20
 #endif
+
+#define WL_PM_ENABLE_TIMEOUT 10000
 
 /* driver status */
 enum wl_status {
@@ -260,6 +265,14 @@ enum wl_management_type {
 	WL_PROBE_RESP = 0x2,
 	WL_ASSOC_RESP = 0x4
 };
+
+enum wl_handler_del_type {
+	WL_HANDLER_NOTUSE,
+	WL_HANDLER_DEL,
+	WL_HANDLER_MAINTAIN,
+	WL_HANDLER_PEND
+};
+
 /* beacon / probe_response */
 struct beacon_proberesp {
 	__le64 timestamp;
@@ -596,6 +609,8 @@ struct wl_priv {
 #ifdef WL_HOST_BAND_MGMT
 	u8 curr_band;
 #endif /* WL_HOST_BAND_MGMT */
+	bool pm_enable_work_on;
+	struct delayed_work pm_enable_work;
 };
 
 
@@ -862,4 +877,10 @@ extern s32 wl_add_remove_eventmsg(struct net_device *ndev, u16 event, bool add);
 extern void wl_stop_wait_next_action_frame(struct wl_priv *wl, struct net_device *ndev);
 extern s32 wl_cfg80211_set_band(struct net_device *ndev, int band);
 extern int wl_cfg80211_update_power_mode(struct net_device *dev);
+
+#ifdef WL11U
+/* Action frame specific functions */
+extern u8 wl_get_action_category(void *frame, u32 frame_len);
+extern int wl_get_public_action(void *frame, u32 frame_len, u8 *ret_action);
+#endif /* WL11U */
 #endif				/* _wl_cfg80211_h_ */

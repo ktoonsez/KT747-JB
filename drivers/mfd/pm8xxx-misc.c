@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2011, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1053,7 +1053,7 @@ static int __devinit pm8xxx_misc_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, chip);
 
 #if defined(CONFIG_MACH_AEGIS2) || defined(CONFIG_MACH_JASPER)\
-	|| (defined(CONFIG_MACH_M2_VZW) && !defined(_d2mtr_))
+	|| defined(CONFIG_MACH_M2_VZW)
 	rc = pm8xxx_hard_reset_config(PM8XXX_DISABLE_HARD_RESET);
 	if (!rc)
 		pr_info("%s : Hard reset is disabled, rc = %d\n", __func__, rc);

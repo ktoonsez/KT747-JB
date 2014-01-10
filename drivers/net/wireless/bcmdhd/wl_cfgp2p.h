@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfgp2p.h 368090 2012-11-12 04:28:13Z $
+ * $Id: wl_cfgp2p.h 415472 2013-07-30 10:52:35Z $
  */
 #ifndef _wl_cfgp2p_h_
 #define _wl_cfgp2p_h_
@@ -42,6 +42,17 @@ typedef enum {
 	P2PAPI_BSSCFG_CONNECTION, /* maps to driver's P2P connection bsscfg */
 	P2PAPI_BSSCFG_MAX
 } p2p_bsscfg_type_t;
+
+typedef enum {
+	P2P_SCAN_PURPOSE_MIN,
+	P2P_SCAN_SOCIAL_CHANNEL, /* scan for social channel */
+	P2P_SCAN_AFX_PEER_NORMAL, /* scan for action frame search */
+	P2P_SCAN_AFX_PEER_REDUCED, /* scan for action frame search with short time */
+	P2P_SCAN_DURING_CONNECTED, /* scan during connected status */
+	P2P_SCAN_CONNECT_TRY, /* scan for connecting */
+	P2P_SCAN_NORMAL, /* scan during not-connected status */
+	P2P_SCAN_PURPOSE_MAX
+} p2p_scan_purpose_t;
 
 /* vendor ies max buffer length for probe response or beacon */
 #define VNDR_IES_MAX_BUF_LEN	1400
@@ -72,6 +83,7 @@ struct p2p_bss {
 struct p2p_info {
 	bool on;    /* p2p on/off switch */
 	bool scan;
+	int16 search_state;
 	bool vif_created;
 	s8 vir_ifname[IFNAMSIZ];
 	unsigned long status;
@@ -145,7 +157,7 @@ enum wl_cfgp2p_status {
 #define CFGP2P_ERR(args)									\
 	do {										\
 		if (wl_dbg_level & WL_DBG_ERR) {				\
-			printk(KERN_INFO "CFGP2P-INFO2) %s : ", __func__);	\
+			printk(KERN_INFO CFGP2P_ERROR_TEXT "%s : ", __func__);	\
 			printk args;						\
 		}									\
 	} while (0)
@@ -188,7 +200,7 @@ wl_cfgp2p_is_p2p_action(void *frame, u32 frame_len);
 extern bool
 wl_cfgp2p_is_gas_action(void *frame, u32 frame_len);
 extern void
-wl_cfgp2p_print_actframe(bool tx, void *frame, u32 frame_len);
+wl_cfgp2p_print_actframe(bool tx, void *frame, u32 frame_len, u32 channel);
 extern s32
 wl_cfgp2p_init_priv(struct wl_priv *wl);
 extern void
@@ -220,11 +232,12 @@ wl_cfgp2p_disable_discovery(struct wl_priv *wl);
 extern s32
 wl_cfgp2p_escan(struct wl_priv *wl, struct net_device *dev, u16 active, u32 num_chans,
 	u16 *channels,
-	s32 search_state, u16 action, u32 bssidx);
+	s32 search_state, u16 action, u32 bssidx, struct ether_addr *tx_dst_addr,
+	p2p_scan_purpose_t p2p_scan_purpose);
 
 extern s32
 wl_cfgp2p_act_frm_search(struct wl_priv *wl, struct net_device *ndev,
-	s32 bssidx, s32 channel);
+	s32 bssidx, s32 channel, struct ether_addr *tx_dst_addr);
 
 extern wpa_ie_fixed_t *
 wl_cfgp2p_find_wpaie(u8 *parse, u32 len);

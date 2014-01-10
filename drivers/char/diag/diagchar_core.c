@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -269,7 +269,7 @@ void diag_clear_reg(int proc_num)
 }
 
 void diag_add_reg(int j, struct bindpkt_params *params,
-				int *success, unsigned int *count_entries)
+				  int *success, unsigned int *count_entries)
 {
 	*success = 1;
 	driver->table[j].cmd_code = params->cmd_code;
@@ -289,7 +289,6 @@ void diag_add_reg(int j, struct bindpkt_params *params,
 long diagchar_ioctl(struct file *filp,
 			   unsigned int iocmd, unsigned long ioarg)
 {
-
 	int i, j, temp, success = -1;
 	unsigned int count_entries = 0, interim_count = 0;
 	void *temp_buf;
@@ -320,7 +319,6 @@ long diagchar_ioctl(struct file *filp,
 		        kfree(head_params);
 		        return -EFAULT;
 		}
-
 		mutex_lock(&driver->diagchar_mutex);
 		for (i = 0; i < diag_max_reg; i++) {
 			if (driver->table[i].process_id == 0) {
@@ -355,7 +353,6 @@ long diagchar_ioctl(struct file *filp,
 						mutex_unlock(&driver->diagchar_mutex);
 						return -EFAULT;
 				}
-
 			/* Make sure size doesnt go beyond threshold */
 			if (diag_max_reg > diag_threshold_reg) {
 				diag_max_reg = diag_threshold_reg;
@@ -368,7 +365,6 @@ long diagchar_ioctl(struct file *filp,
 					mutex_unlock(&driver->diagchar_mutex);
 					return -EFAULT;
 			}
-
 			temp_buf = krealloc(driver->table,
 					 diag_max_reg*sizeof(struct
 					 diag_master_table), GFP_KERNEL);
@@ -394,7 +390,6 @@ long diagchar_ioctl(struct file *filp,
 						return -EFAULT;
 				}
 				kfree(head_params);
-
 				return 0;
 			} else {
 				driver->table = temp_buf;
@@ -404,7 +399,6 @@ long diagchar_ioctl(struct file *filp,
 								&count_entries);
 				if (pkt_params.count > count_entries) {
 						params++;
-
 				} else {
 					mutex_unlock(&driver->diagchar_mutex);
 					kfree(head_params);
@@ -439,7 +433,6 @@ long diagchar_ioctl(struct file *filp,
 				if (copy_to_user((void *)delay_params.num_bytes_ptr,
 										&interim_size, sizeof(int)))
 						return -EFAULT;
-
 				success = 0;
 		}
 	} else if (iocmd == DIAG_IOCTL_LSM_DEINIT) {
@@ -781,20 +774,23 @@ static int diagchar_write(struct file *file, const char __user *buf,
 			pr_alert("diag: Client sending short data\n");
 			return -EBADMSG;
 	}
-
 	payload_size = count - 4;
-
 	if (payload_size > USER_SPACE_DATA) {
 			pr_err("diag: Dropping packet, packet payload size crosses 8KB limit. Current payload size %d\n",
 							payload_size);
 			driver->dropped_count++;
 			return -EBADMSG;
 	}
-
 	if (pkt_type == USER_SPACE_LOG_TYPE) {
 		err = copy_from_user(driver->user_space_data, buf + 4,
 							 payload_size);
-
+		/* Check masks for On-Device logging */
+		if (driver->mask_check) {
+			if (!mask_request_validate(driver->user_space_data)) {
+				pr_alert("diag: mask request Invalid\n");
+				return -EFAULT;
+			}
+		}
 		buf = buf + 4;
 
 		/* To removed "0x7E", when received only "0x7E" */

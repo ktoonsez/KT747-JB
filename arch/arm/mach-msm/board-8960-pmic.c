@@ -1,4 +1,4 @@
-/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,7 +22,6 @@
 #include <mach/restart.h>
 #include "devices.h"
 #include "board-8960.h"
-
 struct pm8xxx_gpio_init {
 	unsigned			gpio;
 	struct pm_gpio			config;
@@ -88,9 +87,10 @@ struct pm8xxx_mpp_init {
 			PM_GPIO_STRENGTH_HIGH, \
 			PM_GPIO_FUNC_NORMAL, 0, 0)
 
+
 /* Initial PM8921 GPIO configurations */
 static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
-#if !defined(CONFIG_MACH_M2_DCM) && !defined(CONFIG_MACH_M2_KDI)
+#if !defined(CONFIG_MACH_M2_DCM) && !defined(CONFIG_MACH_K2_KDI)
 	PM8XXX_GPIO_INPUT(16,	    PM_GPIO_PULL_UP_30), /* SD_CARD_WP */
     /* External regulator shared by display and touchscreen on LiQUID */
 	PM8XXX_GPIO_OUTPUT_VIN(21, 1, PM_GPIO_VIN_VPH),	 /* Backlight Enable */
@@ -101,7 +101,9 @@ static struct pm8xxx_gpio_init pm8921_gpios[] __initdata = {
 	|| defined(CONFIG_FB_MSM_MIPI_SAMSUNG_TFT_VIDEO_WXGA_PT_PANEL)
 	PM8XXX_GPIO_OUTPUT_FUNC(25, 0, PM_GPIO_FUNC_2), /* LED_BACKLIGHT_PWM */
 #endif /* CONFIG_MACH_ESPRESSO_VZW/ATT */
-
+#if defined(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_WXGA_PT_PANEL)
+		PM8XXX_GPIO_OUTPUT_FUNC(25, 0, PM_GPIO_FUNC_2), /* LED_BACKLIGHT_PWM */
+#endif
 	PM8XXX_GPIO_INPUT(26,	    PM_GPIO_PULL_NO), /* SD_CARD_DET_N */
 #if defined(CONFIG_FB_MSM_MIPI_BOEOT_TFT_VIDEO_WSVGA_PT_PANEL) \
 	|| defined(CONFIG_FB_MSM_MIPI_SAMSUNG_TFT_VIDEO_WXGA_PT_PANEL)
@@ -206,14 +208,9 @@ static struct pm8xxx_adc_amux pm8xxx_adc_channels_data[] = {
 	{"dev_mpp_7", ADC_MPP_1_AMUX6, CHAN_PATH_SCALING1, AMUX_RSV1,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_SEC_BOARD_THERM},  /*main_thm */
 #ifdef CONFIG_SAMSUNG_JACK
-#if defined(CONFIG_MACH_M2_KDI)
-	{"earjack", ADC_MPP_2_AMUX6, CHAN_PATH_SCALING2, AMUX_RSV1, 
-		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT}, 
-#else
 	{"earjack", ADC_MPP_1_AMUX6_SCALE_DEFAULT,
 		CHAN_PATH_SCALING1, AMUX_RSV1,
 		ADC_DECIMATION_TYPE2, ADC_SCALE_DEFAULT},
-#endif
 #endif
 };
 
@@ -434,8 +431,8 @@ static struct pm8xxx_keypad_platform_data keypad_data_sim = {
 	.input_phys_device      = "keypad_8960/input0",
 	.num_rows               = 12,
 	.num_cols               = 8,
-	.rows_gpio_start	= PM8921_GPIO_PM_TO_SYS(9),
-	.cols_gpio_start	= PM8921_GPIO_PM_TO_SYS(1),
+	.rows_gpio_start        = PM8921_GPIO_PM_TO_SYS(9),
+	.cols_gpio_start        = PM8921_GPIO_PM_TO_SYS(1),
 	.debounce_ms            = 15,
 	.scan_delay_ms          = 32,
 	.row_hold_ns            = 91500,
@@ -451,6 +448,7 @@ static int pm8921_therm_mitigation[] = {
 };
 
 #define MAX_VOLTAGE_MV		4200
+#define CHG_TERM_MA		100
 static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
 #ifdef CONFIG_PM8921_SEC_CHARGER
 	.safety_time		= 512, /* max */
@@ -462,12 +460,16 @@ static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
 	.safety_time		= 180,
 	.update_time		= 60000,
 	.cool_temp		= 10,
-	.warm_temp		= 40,
+	.warm_temp		= 45,
 #endif /* CONFIG_PM8921_SEC_CHARGER */
 	.max_voltage		= MAX_VOLTAGE_MV,
 	.min_voltage		= 3200,
-	.resume_voltage_delta	= 100,
-	.term_current		= 100,
+	.uvd_thresh_voltage	= 4050,
+	.alarm_low_mv		= 3400,
+	.alarm_high_mv		= 4000,
+	.resume_voltage_delta	= 60,
+	.resume_charge_percent	= 99,
+	.term_current		= CHG_TERM_MA,
 	.temp_check_period	= 1,
 	.max_bat_chg_current	= 1100,
 	.cool_bat_chg_current	= 350,
@@ -476,6 +478,7 @@ static struct pm8921_charger_platform_data pm8921_chg_pdata __devinitdata = {
 	.warm_bat_voltage	= 4100,
 	.thermal_mitigation	= pm8921_therm_mitigation,
 	.thermal_levels		= ARRAY_SIZE(pm8921_therm_mitigation),
+	.rconn_mohm		= 18,
 };
 
 static struct pm8xxx_misc_platform_data pm8xxx_misc_pdata = {
@@ -483,11 +486,25 @@ static struct pm8xxx_misc_platform_data pm8xxx_misc_pdata = {
 };
 
 static struct pm8921_bms_platform_data pm8921_bms_pdata __devinitdata = {
-	.r_sense		= 10,
-	.i_test			= 2500,
-	.v_failure		= 3000,
-	.calib_delay_ms		= 600000,
-	.max_voltage_uv		= MAX_VOLTAGE_MV * 1000,
+	.battery_type			= BATT_UNKNOWN,
+	.r_sense_uohm			= 10000,
+	.v_cutoff			= 3400,
+	.max_voltage_uv			= MAX_VOLTAGE_MV * 1000,
+	.rconn_mohm			= 18,
+	.shutdown_soc_valid_limit	= 20,
+	.adjust_soc_low_threshold	= 25,
+	.chg_term_ua			= CHG_TERM_MA * 1000,
+	.normal_voltage_calc_ms		= 20000,
+	.low_voltage_calc_ms		= 1000,
+	.alarm_low_mv			= 3400,
+	.alarm_high_mv			= 4000,
+	.high_ocv_correction_limit_uv	= 50,
+	.low_ocv_correction_limit_uv	= 100,
+	.hold_soc_est			= 3,
+	.enable_fcc_learning		= 1,
+	.min_fcc_learning_soc		= 20,
+	.min_fcc_ocv_pc			= 30,
+	.min_fcc_learning_samples	= 5,
 };
 
 #define	PM8921_LC_LED_MAX_CURRENT	2	/* I = 4mA */
@@ -963,7 +980,8 @@ static struct pm8xxx_led_platform_data pm8xxx_leds_pdata = {
 };
 
 static struct pm8xxx_ccadc_platform_data pm8xxx_ccadc_pdata = {
-	.r_sense		= 10,
+	.r_sense_uohm		= 10000,
+	.calib_delay_ms		= 600000,
 };
 
 static struct pm8921_platform_data pm8921_platform_data __devinitdata = {
@@ -1008,7 +1026,7 @@ static void msm8921_sec_charger_init(void)
 	} else if (machine_is_M2_DCM() && system_rev >= 0x00) {
 		pm8921_chg_pdata.batt_id_min = 860000;
 		pm8921_chg_pdata.batt_id_max = 960000;
-	} else if (machine_is_M2_KDI() && system_rev >= 0x00) {
+	} else if (machine_is_K2_KDI() && system_rev >= 0x00) {
 		pm8921_chg_pdata.batt_id_min = 860000;
 		pm8921_chg_pdata.batt_id_max = 960000;
 	} else if (machine_is_jaguar() && system_rev >= 0x04) {
@@ -1030,7 +1048,7 @@ static void msm8921_sec_charger_init(void)
 		(machine_is_M2_VZW() && system_rev >= 0x06) ||
 		(machine_is_jaguar() && system_rev >= 0x0A) ||
 		(machine_is_M2_DCM() && system_rev >= 0x00) ||
-		(machine_is_M2_KDI() && system_rev >= 0x00) ||
+		(machine_is_K2_KDI() && system_rev >= 0x00) ||
 		machine_is_JASPER())
 		pm8921_chg_pdata.max_voltage = 4350;
 }
@@ -1040,7 +1058,7 @@ void __init msm8960_init_pmic(void)
 	msm8921_sec_charger_init();
 
 #if !defined(CONFIG_MACH_AEGIS2) && !defined(CONFIG_MACH_JASPER)\
-	&& !(defined(CONFIG_MACH_M2_VZW)&&!defined(_d2mtr_))
+	&& !defined(CONFIG_MACH_M2_VZW)
 	pmic_reset_irq = PM8921_IRQ_BASE + PM8921_RESOUT_IRQ;
 #endif
 	msm8960_device_ssbi_pmic.dev.platform_data =
@@ -1051,6 +1069,19 @@ void __init msm8960_init_pmic(void)
 	if (machine_is_msm8960_sim())
 		pm8921_platform_data.keypad_pdata = &keypad_data_sim;
 
-	if (machine_is_msm8960_liquid())
+	if (machine_is_msm8960_liquid()) {
 		pm8921_platform_data.keypad_pdata = &keypad_data_liquid;
+		pm8921_platform_data.bms_pdata->battery_type = BATT_DESAY;
+	} else if (machine_is_msm8960_mtp()) {
+		pm8921_platform_data.bms_pdata->battery_type = BATT_PALLADIUM;
+	} else if (machine_is_msm8960_cdp()) {
+		pm8921_chg_pdata.has_dc_supply = true;
+	}
+
+	if (machine_is_msm8960_fluid())
+		pm8921_bms_pdata.rconn_mohm = 20;
+
+	if (!machine_is_msm8960_fluid() && !machine_is_msm8960_liquid()
+			&& !machine_is_msm8960_mtp())
+		pm8921_chg_pdata.battery_less_hardware = 1;
 }

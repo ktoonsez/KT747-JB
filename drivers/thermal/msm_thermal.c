@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -47,7 +47,6 @@ static int update_cpu_max_freq(struct cpufreq_policy *cpu_policy,
 
 	cpufreq_verify_within_limits(cpu_policy,
 				cpu_policy->min, max_freq);
-	if (max_freq > 1512000) max_freq = 1512000;
 	cpu_policy->user_policy.max = max_freq;
 
 	ret = cpufreq_update_policy(cpu);

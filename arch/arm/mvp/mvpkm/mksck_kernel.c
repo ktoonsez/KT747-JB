@@ -1,7 +1,7 @@
 /*
  * Linux 2.6.32 and later Kernel module for VMware MVP Hypervisor Support
  *
- * Copyright (C) 2010-2012 VMware, Inc. All rights reserved.
+ * Copyright (C) 2010-2013 VMware, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published by
@@ -1162,10 +1162,10 @@ MksckPageDescToFd(struct socket *sock,
          goto endProcessingReleaseSock;
       }
 
-      mpdi = sock_kmalloc(newsk, sizeof(MksckPageDescInfo) +
-                          pages*sizeof(Mksck_PageDesc), GFP_KERNEL);
-      if (IS_ERR(mpdi)) {
-         retval = PTR_ERR(mpdi);
+      mpdi = kmalloc(sizeof(MksckPageDescInfo) +
+                     pages*sizeof(Mksck_PageDesc), GFP_KERNEL);
+      if (!mpdi) {
+         retval = -ENOMEM;
          release_sock(newsk);
          goto endProcessingReleaseSock;
       }
@@ -1203,17 +1203,16 @@ MksckPageDescToFd(struct socket *sock,
       sock_hold(sk); // keeps a reference to parent mk socket
       newsock->ops = &mksckPageDescOps;
 
-      mpdi = sock_kmalloc(newsk, sizeof(MksckPageDescInfo) +
-                          pages*sizeof(Mksck_PageDesc), GFP_KERNEL);
-      if (IS_ERR(mpdi)) {
-         retval = PTR_ERR(mpdi);
+      mpdi = kmalloc(sizeof(MksckPageDescInfo) +
+                     pages*sizeof(Mksck_PageDesc), GFP_KERNEL);
+      if (!mpdi) {
+         retval = -ENOMEM;
          goto endProcessingFreeNewSock;
       }
 
       sk->sk_user_data = sock_kmalloc(sk, sizeof(int), GFP_KERNEL);
-      if (IS_ERR(sk->sk_user_data)) {
-         retval = PTR_ERR(sk->sk_user_data);
-         sk->sk_user_data = NULL;
+      if (sk->sk_user_data == NULL) {
+         retval = -ENOMEM;
          goto endProcessingKFreeAndNewSock;
       }
 
@@ -1232,8 +1231,7 @@ MksckPageDescToFd(struct socket *sock,
       if (retval < 0) {
          sock_kfree_s(sk, sk->sk_user_data, sizeof(int));
          sk->sk_user_data = NULL;
-         sock_kfree_s(newsk, mpdi, sizeof(MksckPageDescInfo) +
-                      mpdi->pages*sizeof(Mksck_PageDesc));
+         kfree(mpdi);
          release_sock(newsk);
          sockfd_put(newsock);
          sock_release(newsock);
@@ -1260,8 +1258,7 @@ MksckPageDescToFd(struct socket *sock,
    return 0;
 
 endProcessingKFreeAndNewSock:
-   sock_kfree_s(newsk, mpdi, sizeof(MksckPageDescInfo) +
-                mpdi->pages*sizeof(Mksck_PageDesc));
+   kfree(mpdi);
 endProcessingFreeNewSock:
    release_sock(newsk);
    sock_release(newsock);
@@ -1269,8 +1266,7 @@ endProcessingFreeNewSock:
    return retval;
 
 endProcessingKFreeReleaseSock:
-   sock_kfree_s(newsk, mpdi, sizeof(MksckPageDescInfo) +
-                mpdi->pages*sizeof(Mksck_PageDesc));
+   kfree(mpdi);
    release_sock(newsk);
 endProcessingReleaseSock:
    release_sock(sk);
@@ -1293,8 +1289,7 @@ MksckPageDescSkDestruct(struct sock *sk)
       MksckPageDescInfo *next = mpdi->next;
       MksckPageDescManage(mpdi->descs, mpdi->pages,
                           MANAGE_DECREMENT);
-      sock_kfree_s(sk, mpdi, sizeof(MksckPageDescInfo) +
-                   mpdi->pages*sizeof(Mksck_PageDesc));
+      kfree(mpdi);
       mpdi = next;
    }
    if (sk->sk_user_data) {
@@ -1367,8 +1362,7 @@ MksckPageDescMMap(struct file *file,
       if (mpdi->mapCounts && !--mpdi->mapCounts) {
          MksckPageDescManage(mpdi->descs, mpdi->pages,
                              MANAGE_DECREMENT);
-         sock_kfree_s(sk, mpdi, sizeof(MksckPageDescInfo) +
-                      mpdi->pages*sizeof(Mksck_PageDesc));
+         kfree(mpdi);
          freed = 1;
       }
       mpdi = next;

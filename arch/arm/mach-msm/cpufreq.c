@@ -3,7 +3,7 @@
  * MSM architecture cpufreq driver
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2007-2010, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2007-2010, The Linux Foundation. All rights reserved.
  * Author: Mike A. Chan <mikechan@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -201,16 +201,14 @@ static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 	}
 
 	if (cur_freq != table[index].frequency) {
-		int newfreq, ret = 0;
-		if (table[index].frequency > 1512000) newfreq = 1512000;
-		else newfreq = table[index].frequency;
-		ret = acpuclk_set_rate(policy->cpu, newfreq, SETRATE_CPUFREQ);
-
+		int ret = 0;
+		ret = acpuclk_set_rate(policy->cpu, table[index].frequency,
+				SETRATE_CPUFREQ);
 		if (ret)
 			return ret;
 		pr_info("cpufreq: cpu%d init at %d switching to %d\n",
-				policy->cpu, cur_freq, newfreq);
-		cur_freq = newfreq;
+				policy->cpu, cur_freq, table[index].frequency);
+		cur_freq = table[index].frequency;
 	}
 
 	policy->cur = cur_freq;

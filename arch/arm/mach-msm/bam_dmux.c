@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -162,6 +162,7 @@ static struct sps_mem_buffer tx_desc_mem_buf;
 static struct sps_mem_buffer rx_desc_mem_buf;
 static struct sps_register_event tx_register_event;
 static struct sps_register_event rx_register_event;
+static unsigned long long last_rx_pkt_timestamp;
 
 static struct bam_ch_info bam_ch[BAM_DMUX_NUM_CHANNELS];
 static int bam_mux_initialized;
@@ -325,7 +326,7 @@ static void bam_dmux_log(const char *fmt, ...)
 		);
 #else
 	len += scnprintf(buff, sizeof(buff),
-		"<DMUX> %u.%09lu %c%c%c%c %c%c%c%c%d%c ",
+		"<DMUX> %u.%09lu %c%c%c%c %c%c%c%c%d ",
 		(unsigned)t_now, nanosec_rem,
 		a2_pc_disabled ? 'D' : 'd',
 		in_global_reset ? 'R' : 'r',
@@ -1109,6 +1110,14 @@ fail:
 	pr_err("%s: reverting to polling\n", __func__);
 	queue_work(bam_mux_rx_workqueue, &rx_timer_work);
 }
+/**
+ * store_rx_timestamp() - store the current raw time as as a timestamp for when
+ *			the last rx packet was processed
+ */
+static void store_rx_timestamp(void)
+{
+	last_rx_pkt_timestamp = sched_clock();
+}
 
 static void rx_timer_work_func(struct work_struct *work)
 {
@@ -1131,6 +1140,7 @@ static void rx_timer_work_func(struct work_struct *work)
 			}
 			if (iov.addr == 0)
 				break;
+			store_rx_timestamp();
 			inactive_cycles = 0;
 			mutex_lock(&bam_rx_pool_mutexlock);
 			if (unlikely(list_empty(&bam_rx_pool))) {

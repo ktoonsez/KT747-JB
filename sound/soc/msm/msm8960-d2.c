@@ -31,9 +31,17 @@
 #include "../codecs/wcd9310.h"
 #include <linux/mfd/wcd9310/core.h>
 #include <mach/msm8960-gpio.h>
+#if defined(CONFIG_MACH_AEGIS2)
+#include <linux/i2c/fsa9485.h>
+#endif
 
 #ifndef GPIO_MAIN_MIC_BIAS
 #define GPIO_MAIN_MIC_BIAS -1
+#endif
+
+#if defined(CONFIG_MACH_AEGIS2)
+#define SW_AUDIO		((2 << 5) | (2 << 2) | (1 << 1) | (1 << 0))
+#define SW_USB_OPEN		(1 << 0)
 #endif
 
 /* 8960 machine driver */
@@ -135,6 +143,9 @@ struct ext_amp_work {
 };
 
 static struct ext_amp_work ext_amp_dwork;
+#if defined(CONFIG_MACH_AEGIS2)
+static struct ext_amp_work bottom_amp_dwork;
+#endif
 
 /* Work queue for delaying the amp power on-off to
 remove the static noise during SPK_PA enable */
@@ -146,6 +157,14 @@ static void external_speaker_amp_work(struct work_struct *work)
 			" Top Speaker Ampl\n", __func__);
 	usleep_range(4000, 4000);
 }
+
+#if defined(CONFIG_MACH_AEGIS2)
+static void bottom_speaker_amp_work(struct work_struct *work)
+{
+	pr_debug("%s :: bottom Speaker Amp enable\n", __func__);
+	fsa9485_checkandhookaudiodockfornoise(SW_AUDIO);
+}
+#endif
 
 static void msm8960_ext_spk_power_amp_on(u32 spk)
 {
@@ -169,6 +188,11 @@ static void msm8960_ext_spk_power_amp_on(u32 spk)
 			pr_debug("%s: slepping 4 ms after turning on external "
 				" Bottom Speaker Ampl\n", __func__);
 			usleep_range(4000, 4000);
+#if defined(CONFIG_MACH_AEGIS2)
+			schedule_delayed_work(
+			&bottom_amp_dwork.dwork,
+			msecs_to_jiffies(50));
+#endif
 		}
 
 	} else if (spk & (TOP_SPK_AMP_POS | TOP_SPK_AMP_NEG)) {
@@ -214,7 +238,9 @@ static void msm8960_ext_spk_power_amp_off(u32 spk)
 			" Speaker Ampl\n", __func__);
 
 		usleep_range(4000, 4000);
-
+#if defined(CONFIG_MACH_AEGIS2)
+		fsa9485_checkandhookaudiodockfornoise(SW_USB_OPEN);
+#endif
 	} else if (spk & (TOP_SPK_AMP_POS | TOP_SPK_AMP_NEG)) {
 
 		if (!msm8960_ext_top_spk_pamp)
@@ -316,7 +342,7 @@ static int msm8960_bias_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *k, int event)
 {
 	pr_debug("GPIO BIAS UP!!!%d\n", SND_SOC_DAPM_EVENT_ON(event));
-#if defined(CONFIG_MACH_M2_DCM) || defined(CONFIG_MACH_M2_KDI)
+#if defined(CONFIG_MACH_M2_DCM) || defined(CONFIG_MACH_K2_KDI)
 	if (system_rev == BOARD_REV00)
 		gpio_direction_output(GPIO_MAIN_MIC_BIAS_REV00,
 				SND_SOC_DAPM_EVENT_ON(event));
@@ -888,7 +914,7 @@ static int msm8960_btsco_rate_put(struct snd_kcontrol *kcontrol,
 		msm8960_btsco_rate = BTSCO_RATE_8KHZ;
 		break;
 	}
-	pr_debug("%s: msm8960_btsco_rate = %d\n", __func__,
+	pr_info("%s: msm8960_btsco_rate = %d\n", __func__,
 					msm8960_btsco_rate);
 	return 0;
 }
@@ -1165,7 +1191,7 @@ static int msm8960_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	} else if (machine_is_M2_DCM()) {
 		snd_soc_dapm_add_routes(dapm, common_audio_map_rev00,
 			ARRAY_SIZE(common_audio_map_rev00));
-	} else if (machine_is_M2_KDI()) {
+	} else if (machine_is_K2_KDI()) {
 		snd_soc_dapm_add_routes(dapm, common_audio_map_rev00,
 			ARRAY_SIZE(common_audio_map_rev00));
 	} else {
@@ -1216,9 +1242,9 @@ static int msm8960_audrx_init(struct snd_soc_pcm_runtime *rtd)
 
 	if (((machine_is_M2_SKT() && system_rev < BOARD_REV08) ||
 		(machine_is_M2_DCM() && system_rev < BOARD_REV03) ||
-		(machine_is_M2_KDI() && system_rev < BOARD_REV03)) ||
+		(machine_is_K2_KDI() && system_rev < BOARD_REV03)) ||
 		(!machine_is_M2_SKT() && !machine_is_M2_DCM() &&
-		!machine_is_STRETTO() && !machine_is_M2_KDI() &&
+		!machine_is_STRETTO() && !machine_is_K2_KDI() &&
 		!machine_is_SUPERIORLTE_SKT())) {
 		/* using mbhc driver for earjack */
 		if (GPIO_DETECT_USED) {
@@ -1257,7 +1283,8 @@ static struct snd_soc_dsp_link fe_media = {
 	},
 };
 
-static struct snd_soc_dsp_link slimbus0_hl_media = {
+/* bi-directional media definition for hostless PCM device */
+static struct snd_soc_dsp_link bidir_hl_media = {
 	.playback = true,
 	.capture = true,
 	.trigger = {
@@ -1266,9 +1293,8 @@ static struct snd_soc_dsp_link slimbus0_hl_media = {
 	},
 };
 
-static struct snd_soc_dsp_link int_fm_hl_media = {
+static struct snd_soc_dsp_link hdmi_rx_hl = {
 	.playback = true,
-	.capture = true,
 	.trigger = {
 		SND_SOC_DSP_TRIGGER_POST,
 		SND_SOC_DSP_TRIGGER_POST
@@ -1350,7 +1376,7 @@ static int msm8960_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 
 	return 0;
 }
-
+#if !defined(CONFIG_MACH_COMANCHE) && !defined (CONFIG_MACH_GOGH) && !defined (CONFIG_MACH_JASPER)
 static int msm8960_hdmi_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					struct snd_pcm_hw_params *params)
 {
@@ -1366,7 +1392,7 @@ static int msm8960_hdmi_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 
 	return 0;
 }
-
+#endif
 static int msm8960_btsco_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					struct snd_pcm_hw_params *params)
 {
@@ -1391,7 +1417,7 @@ static int msm8960_auxpcm_be_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	/* PCM only supports mono output with 8khz sample rate */
-	rate->min = rate->max = 8000;
+	rate->min = rate->max = msm8960_btsco_rate;
 	channels->min = channels->max = 1;
 
 	return 0;
@@ -1886,7 +1912,7 @@ static struct snd_soc_dai_link msm8960_dai[] = {
 		.cpu_dai_name	= "SLIMBUS0_HOSTLESS",
 		.platform_name  = "msm-pcm-hostless",
 		.dynamic = 1,
-		.dsp_link = &slimbus0_hl_media,
+		.dsp_link = &bidir_hl_media,
 		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
 		.ignore_suspend = 1,
 		/* .be_id = do not care */
@@ -1897,7 +1923,7 @@ static struct snd_soc_dai_link msm8960_dai[] = {
 		.cpu_dai_name	= "INT_FM_HOSTLESS",
 		.platform_name  = "msm-pcm-hostless",
 		.dynamic = 1,
-		.dsp_link = &int_fm_hl_media,
+		.dsp_link = &bidir_hl_media,
 		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
 		.ignore_suspend = 1,
 		/* .be_id = do not care */
@@ -1929,6 +1955,28 @@ static struct snd_soc_dai_link msm8960_dai[] = {
 		.dsp_link = &lpa_fe_media,
 		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA4,
 	},
+	{
+		.name = "AUXPCM Hostless",
+		.stream_name = "AUXPCM Hostless",
+		.cpu_dai_name	= "AUXPCM_HOSTLESS",
+		.platform_name  = "msm-pcm-hostless",
+		.dynamic = 1,
+		.dsp_link = &bidir_hl_media,
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.ignore_suspend = 1,
+	},
+	/* HDMI Hostless */
+	{
+		.name = "HDMI_RX_HOSTLESS",
+		.stream_name = "HDMI_RX_HOSTLESS",
+		.cpu_dai_name = "HDMI_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
+		.dynamic = 1,
+		.dsp_link = &hdmi_rx_hl,
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
+		.no_codec = 1,
+		.ignore_suspend = 1,
+	},
 	/* Backend BT/FM DAI Links */
 	{
 		.name = LPASS_BE_INT_BT_SCO_RX,
@@ -1952,6 +2000,15 @@ static struct snd_soc_dai_link msm8960_dai[] = {
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_INT_BT_SCO_TX,
 		.be_hw_params_fixup = msm8960_btsco_be_hw_params_fixup,
+	},
+	{
+		.name = "MSM8960 LowLatency",
+		.stream_name = "MultiMedia5",
+		.cpu_dai_name	= "MultiMedia5",
+		.platform_name  = "msm-lowlatency-pcm-dsp",
+		.dynamic = 1,
+		.dsp_link = &fe_media,
+		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA5,
 	},
 	{
 		.name = LPASS_BE_INT_FM_RX,
@@ -2090,6 +2147,7 @@ static struct platform_device *msm8960_snd_device;
 static int msm8960_configure_audio_gpios(void)
 {
 	int ret;
+
 	struct pm_gpio param = {
 		.direction      = PM_GPIO_DIR_OUT,
 		.output_buffer  = PM_GPIO_OUT_BUF_CMOS,
@@ -2099,37 +2157,8 @@ static int msm8960_configure_audio_gpios(void)
 		.out_strength   = PM_GPIO_STRENGTH_MED,
 		.function       = PM_GPIO_FUNC_NORMAL,
 	};
-#if defined(CONFIG_MACH_M2_KDI)
-
-        struct pm_gpio mic_open_det_param = {
-                .direction      = PM_GPIO_DIR_IN,
-                .output_buffer  = PM_GPIO_OUT_BUF_CMOS,
-                .output_value   = 1,
-                .pull      = PM_GPIO_PULL_NO,
-                .vin_sel        = PM_GPIO_VIN_S4,
-                .out_strength   = PM_GPIO_STRENGTH_MED,
-                .function       = PM_GPIO_FUNC_NORMAL,
-        };
-
-
-        ret = gpio_request(PM8921_GPIO_PM_TO_SYS(35), "US_EURO_SWITCH");
-        if (ret) {
-                pr_err("%s: Failed to request gpio %d\n", __func__,
-                        PM8921_GPIO_PM_TO_SYS(35));
-                return ret;
-        }
-        ret = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(35), &mic_open_det_param);
-        if (ret) {
-                pr_err("%s: Failed to configure gpio %d\n", __func__,
-                        PM8921_GPIO_PM_TO_SYS(35));
-                return ret;
-        }
-        gpio_direction_input(PM8921_GPIO_PM_TO_SYS(35));
-
-#endif
-
 #if !defined(CONFIG_MACH_M2_DCM) && !defined(CONFIG_MACH_AEGIS2) \
-	&& !defined(CONFIG_MACH_M2_KDI) && !defined(CONFIG_MACH_EXPRESS)
+	&& !defined(CONFIG_MACH_K2_KDI) && !defined(CONFIG_MACH_EXPRESS)
 	ret = gpio_request(PM8921_GPIO_PM_TO_SYS(23), "AV_SWITCH");
 	if (ret) {
 		pr_err("%s: Failed to request gpio %d\n", __func__,
@@ -2193,11 +2222,8 @@ static int msm8960_configure_audio_gpios(void)
 static void msm8960_free_audio_gpios(void)
 {
 	if (msm8960_audio_gpios_configured) {
-#if defined(CONFIG_MACH_M2_KDI)
-                gpio_free(PM8921_GPIO_PM_TO_SYS(35));
-#endif
 #if !defined(CONFIG_MACH_M2_DCM) && !defined(CONFIG_MACH_AEGIS2) \
-	&& !defined(CONFIG_MACH_M2_KDI) && !defined(CONFIG_MACH_EXPRESS)
+	&& !defined(CONFIG_MACH_K2_KDI) && !defined(CONFIG_MACH_EXPRESS)
 		gpio_free(PM8921_GPIO_PM_TO_SYS(23));
 		gpio_free(PM8921_GPIO_PM_TO_SYS(35));
 #endif
@@ -2263,6 +2289,10 @@ static int __init msm8960_audio_init(void)
 	
 	INIT_DELAYED_WORK(&ext_amp_dwork.dwork,
 			external_speaker_amp_work);
+#if defined(CONFIG_MACH_AEGIS2)
+	INIT_DELAYED_WORK(&bottom_amp_dwork.dwork,
+			bottom_speaker_amp_work);
+#endif
 	return ret;
 
 }

@@ -184,13 +184,6 @@ static ssize_t brightness_level_show(struct device *dev,
 	return count;
 }
 
-extern void boostpulse_relay_kt();
-static bool kt_is_active_benabled = false;
-void kt_is_active_benabled_touchkey(bool val)
-{
-	kt_is_active_benabled = val;
-}
-
 static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 {
 	struct cypress_touchkey_info *info = dev_id;
@@ -241,11 +234,7 @@ static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 #if defined(SEC_TOUCHKEY_DEBUG)
 	TOUCHKEY_LOG(info->keycode[code], press);
 #endif
-	if (kt_is_active_benabled && press == 1 && (info->keycode[code] == 158 || info->keycode[code] == 139))
-	{
-		boostpulse_relay_kt();
-		//pr_alert("KEY_PRESS: %d-%d\n", info->keycode[code], press);
-	}
+
 	if (touch_is_pressed && press) {
 		printk(KERN_ERR "[TouchKey] don't send event because touch is pressed.\n");
 		printk(KERN_ERR "[TouchKey] touch_pressed = %d\n",
@@ -380,11 +369,12 @@ static ssize_t touchkey_firm_status_show(struct device *dev,
 	dev_dbg(&info->client->dev, "[TouchKey] touchkey_update_status: %d\n",
 						info->touchkey_update_status);
 	if (info->touchkey_update_status == 0)
-		count = snprintf(buff, sizeof(buff), "PASS\n");
+		count = snprintf(buff, sizeof(buff), "PASS");
 	else if (info->touchkey_update_status == 1)
-		count = snprintf(buff, sizeof(buff), "Downloading\n");
+		count = snprintf(buff, sizeof(buff), "Downloading");
 	else if (info->touchkey_update_status == -1)
-		count = snprintf(buff, sizeof(buff), "Fail\n");
+		count = snprintf(buff, sizeof(buff), "Fail");
+	count = snprintf(buf, sizeof(buff), "%s\n", buff);
 	return count;
 }
 
@@ -850,7 +840,10 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	struct input_dev *input_dev;
 	int ret = 0;
 	int i;
+#if defined(CONFIG_MACH_M2_ATT) || defined(CONFIG_MACH_M2_DCM) \
+	|| defined(CONFIG_MACH_M2_SKT) || defined(CONFIG_MACH_K2_KDI)
 	int retry = NUM_OF_RETRY_UPDATE;
+#endif
 	int ic_fw_ver;
 
 	struct device *sec_touchkey;
@@ -953,7 +946,7 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	dev_err(&client->dev, "Touchkey FW Version: 0x%02x\n", ic_fw_ver);
 
 #if defined(CONFIG_MACH_M2_ATT) || defined(CONFIG_MACH_M2_DCM) \
-	|| defined(CONFIG_MACH_M2_SKT) || defined(CONFIG_MACH_M2_KDI)
+	|| defined(CONFIG_MACH_M2_SKT) || defined(CONFIG_MACH_K2_KDI)
 	dev_err(&client->dev, "Touchkey FW Version: 0x%02x, system_rev: %x\n",
 						ic_fw_ver, system_rev);
 	if (0 /* ic_fw_ver < BIN_FW_VERSION */) {

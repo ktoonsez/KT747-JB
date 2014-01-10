@@ -2,7 +2,7 @@
 export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
-export INITRAMFS_SOURCE=`readlink -f ..`/Ramdisks/TW_JB_MA6
+export INITRAMFS_SOURCE=`readlink -f ..`/Ramdisks/TW_JB_MK3
 export CONFIG_SAMMY_BUILD=y
 export PACKAGEDIR=$PARENT_DIR/Packages/TW_JB_VZW
 #Enable FIPS mode
@@ -12,7 +12,8 @@ export ARCH=arm
 # export CROSS_COMPILE=/home/ktoonsez/kernel/siyah/arm-2011.03/bin/arm-none-eabi-
 # export CROSS_COMPILE=/home/ktoonsez/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
 # export CROSS_COMPILE=/home/ktoonsez/androidjb/system/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-
-export CROSS_COMPILE=$PARENT_DIR/linaro4.7/bin/arm-eabi-
+# export CROSS_COMPILE=$PARENT_DIR/linaro4.7/bin/arm-eabi-
+export CROSS_COMPILE=/home/ktoonsez/cm/prebuilts/gcc/linux-x86/arm/arm-eabi-4.7/bin/arm-eabi-
 
 echo "Remove old Package Files"
 rm -rf $PACKAGEDIR/*
@@ -68,8 +69,8 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	cp -R ../META-INF .
 	rm ramdisk.gz
 	rm zImage
-	rm ../KT747-TW-JB-4.1.2-VZW*.zip
-	zip -r ../KT747-TW-JB-4.1.2-VZW-$curdate.zip .
+	rm ../KT747-TW-JB-4.3-VZW*.zip
+	zip -r ../KT747-TW-JB-4.3-VZW-$curdate.zip .
 	cd $KERNELDIR
 else
 	echo "KERNEL DID NOT BUILD! no zImage exist"

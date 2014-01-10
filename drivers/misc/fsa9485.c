@@ -36,7 +36,6 @@
 #include <linux/mfd/pmic8058.h>
 #include <linux/input.h>
 #include <linux/sii9234.h>
-#include <linux/slide2wake.h>
 
 /* FSA9480 I2C registers */
 #define FSA9485_REG_DEVID		0x01
@@ -140,8 +139,6 @@
 int uart_connecting;
 EXPORT_SYMBOL(uart_connecting);
 
-extern int force_fast_charge;
-
 int detached_status;
 EXPORT_SYMBOL(detached_status);
 
@@ -187,6 +184,7 @@ static struct fsa9485_usbsw *local_usbsw;
 static int isDeskdockconnected;
 #endif
 
+#if !defined(CONFIG_MACH_COMANCHE) && !defined(CONFIG_MACH_JASPER) && !defined(CONFIG_MACH_GOGH)
 static void DisableFSA9480Interrupts(void)
 {
 	struct i2c_client *client = local_usbsw->client;
@@ -215,6 +213,7 @@ static void EnableFSA9480Interrupts(void)
 
 }
 
+#endif
 #if defined(CONFIG_MACH_AEGIS2)
 void fsa9485_checkandhookaudiodockfornoise(int value)
 {
@@ -670,7 +669,7 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 	if (usbsw->dock_attached)
 		pdata->dock_cb(FSA9485_DETACHED_DOCK);
 
-	if (local_usbsw->dock_ready == 1)
+	if (local_usbsw->dock_ready == 1) 
 #if defined(CONFIG_USB_SWITCH_SMART_DOCK_ENABLE)
 		if (adc == 0x10)
 			val2 = DEV_SMARTDOCK;
@@ -686,17 +685,12 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 
 	/* Attached */
 	if (val1 || val2) {
-		slide2wake_change(11);
 		/* USB */
 		if (val1 & DEV_USB || val2 & DEV_T2_USB_MASK) {
 			dev_info(&client->dev, "usb connect\n");
 
-			if (pdata->usb_cb) {
-				if (pdata->charger_cb && force_fast_charge != 0) {
-					dev_info(&client->dev, "[imoseyon] fastcharge\n");
-					pdata->charger_cb(FSA9485_ATTACHED);
-				} else pdata->usb_cb(FSA9485_ATTACHED);
-			}
+			if (pdata->usb_cb)
+				pdata->usb_cb(FSA9485_ATTACHED);
 			if (usbsw->mansw) {
 				ret = i2c_smbus_write_byte_data(client,
 				FSA9485_REG_MANSW1, usbsw->mansw);
@@ -869,18 +863,11 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 		}
 	/* Detached */
 	} else {
-		slide2wake_change(10);
 		/* USB */
 		if (usbsw->dev1 & DEV_USB ||
 				usbsw->dev2 & DEV_T2_USB_MASK) {
-			if (pdata->usb_cb) {
-				if (pdata->charger_cb && force_fast_charge != 0) {
-					dev_info(&client->dev, "[imoseyon] fastcharge detached\n");
-					pdata->charger_cb(FSA9485_DETACHED);
-				}
-				else
-					pdata->usb_cb(FSA9485_DETACHED);
-			}
+			if (pdata->usb_cb)
+				pdata->usb_cb(FSA9485_DETACHED);
 		} else if (usbsw->dev1 & DEV_USB_CHG) {
 			if (pdata->usb_cdp_cb)
 				pdata->usb_cdp_cb(FSA9485_DETACHED);
@@ -964,11 +951,7 @@ static int fsa9485_detect_dev(struct fsa9485_usbsw *usbsw)
 				pdata->smartdock_cb(FSA9485_DETACHED);
 			usbsw->adc = 0;
 #if defined(CONFIG_VIDEO_MHL_V1) || defined(CONFIG_VIDEO_MHL_V2)
-#if defined CONFIG_MHL_D3_SUPPORT
 			mhl_onoff_ex(false);
-			detached_status = 1;
-#endif
-			isDeskdockconnected = 0;
 #endif
 #endif
 		} else if (usbsw->adc == 0x12) {
@@ -1014,8 +997,8 @@ static int fsa9485_handle_dock_vol_key(struct fsa9485_usbsw *info, int adc)
 {
 	struct input_dev *input = info->input;
 	int pre_key = info->previous_key;
-	unsigned int code;
-	int state;
+	unsigned int code = 0;
+	int state = 0;
 
 	if (adc == ADC_OPEN) {
 		switch (pre_key) {

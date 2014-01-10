@@ -261,7 +261,7 @@ static void *circ_buf_lookup(struct kfree_circ_buf *circ_buf, void *addr)
 	}
 
 	return NULL;
-	}
+}
 
 static void *circ_buf_get(struct kfree_circ_buf *circ_buf)
 {
@@ -285,7 +285,7 @@ static void *circ_buf_put(struct kfree_circ_buf *circ_buf,
 
 void *kfree_hook(void *p, void *caller)
 {
-	unsigned int flags;
+	unsigned long flags;
 	struct kfree_info_entry *match = NULL;
 	void *tofree = NULL;
 	unsigned int addr = (unsigned int)p;
@@ -297,6 +297,7 @@ void *kfree_hook(void *p, void *caller)
 				__func__, addr, caller);
 		return NULL;
 	}
+
 	if (addr&0x1) {
 		/* return original address to free */
 		return (void *)(addr&~(KFREE_HOOK_BYPASS_MASK));
@@ -315,7 +316,7 @@ void *kfree_hook(void *p, void *caller)
 
 	if (match) {
 		pr_err("%s: 0x%08x was already freed by %pS()\n",
-			__func__, p, match->caller);
+			__func__, (unsigned int)p, match->caller);
 		spin_unlock_irqrestore(&circ_buf_lock, flags);
 		panic("double free detected!");
 		return NULL;
@@ -385,7 +386,6 @@ static int force_error(const char *val, struct kernel_param *kp)
 #endif
 	} else if (!strncmp(val, "bushang", 7)) {
 		void __iomem *p;
-		unsigned int val;
 		pr_emerg("Generating Bus Hang!\n");
 		p = ioremap_nocache(0x04300000, 32);
 		*(unsigned int *)p = *(unsigned int *)p;
@@ -943,34 +943,6 @@ int sec_debug_subsys_add_var_mon(char *name, unsigned int size, unsigned int pa)
 	secdbg_krait->var_mon.idx++;
 
 	return 0;
-}
-
-void print_modem_dump_info(void)
-{
-	int i = 0;
-	char modem_exception_info[1024];
-
-	if (!secdbg_subsys)
-		return;
-	secdbg_modem = &secdbg_subsys->priv.modem;
-	if (!secdbg_modem)
-		return;
-	pr_info("secdbg_modem address : 0x%x", secdbg_modem);
-	snprintf(modem_exception_info, ARRAY_SIZE(modem_exception_info)-1,
-		"Task: %s\nFile name: %s\nLine: %d\nError msg: %s\n",
-		secdbg_modem->excp.task, secdbg_modem->excp.file,
-		secdbg_modem->excp.line, secdbg_modem->excp.msg);
-	pr_info("*******************************************************\n");
-	pr_info("modem exception information : %s\n", modem_exception_info);
-	pr_info("Register information:\n");
-	for (i = 0; i < ARRAY_SIZE(secdbg_modem->excp.core_reg); i++) {
-		snprintf(modem_exception_info,
-		ARRAY_SIZE(modem_exception_info)-1,
-		"\t%s: 0x%08x\n", secdbg_modem->excp.core_reg[i].name,
-		secdbg_modem->excp.core_reg[i].value);
-		pr_info(" %s\n", modem_exception_info);
-	}
-	pr_info("*******************************************************\n");
 }
 
 int sec_debug_subsys_init(void)

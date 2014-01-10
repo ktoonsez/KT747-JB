@@ -226,6 +226,14 @@ config GENERIC_BUG
 	def_bool y
 	depends on BUG
 
+config ARCH_RANDOM
+	bool "SOC specific random number generation"
+	help
+	 Allow the kernel to use an architecture specific implementation for
+	 random number generation
+
+	 If unsure, say N
+
 source "init/Kconfig"
 
 source "kernel/Kconfig.freezer"
@@ -1475,10 +1483,6 @@ config HOTPLUG_CPU
 	  Say Y here to experiment with turning CPUs off and on.  CPUs
 	  can be controlled through /sys/devices/system/cpu.
 
-config ARM_AUTO_HOTPLUG
-	bool "Auto hotplugging based on scheduler runqueue load for ARM SoCs"
-	default y
-
 config LOCAL_TIMERS
 	bool "Use local timer interrupts"
 	depends on SMP && (REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || \
@@ -1824,9 +1828,8 @@ config CP_ACCESS
 
 	  If unsure, say N.
 
-source "arch/arm/mvp/Kconfig"
-
 endmenu
+source "arch/arm/mvp/Kconfig"
 
 menu "Boot options"
 

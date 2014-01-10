@@ -1,7 +1,7 @@
 /*
  * Linux 2.6.32 and later Kernel module for VMware MVP PVTCP Server
  *
- * Copyright (C) 2010-2012 VMware, Inc. All rights reserved.
+ * Copyright (C) 2010-2013 VMware, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published by
@@ -26,6 +26,8 @@
 
 
 #include "pvtcp.h"
+#include "comm_os.h"
+#include "comm_os_mod_ver.h"
 
 #if defined(CONFIG_NET_NS)
 #include <linux/nsproxy.h>
@@ -47,6 +49,9 @@
 /* From mvpkm */
 extern uid_t Mvpkm_vmwareUid;
 extern gid_t Mvpkm_vmwareGid;
+
+extern struct mutex modules_lock;
+extern int (*pvtcpOSModStart)(void);
 
 /*
  * Credentials to back socket file pointer. Used in Android ICS network
@@ -411,16 +416,6 @@ static struct kobj_type stateKType = {
    .release = StateKObjRelease,
    .default_attrs = stateKObjDefaultAttrs
 };
-
-
-/*
- * Initialization of module entry and exit callbacks.
- */
-
-static int Init(void *args);
-static void Exit(void);
-
-COMM_OS_MOD_INIT(Init, Exit);
 
 
 /*
@@ -1234,16 +1229,18 @@ PvtcpResetLoopbackInet6(PvtcpSock *pvsk,
 
 
 /**
- * @brief Called at module load time. It registers with the Comm runtime.
- * @param args initialization arguments
+ * @brief Called at module startup time. It registers with the Comm runtime.
  * @return zero if successful, -1 otherwise
  * @sideeffect Leaves the module loaded
  */
 
 static int
-Init(void *args)
+PvtcpOSModStart(void)
 {
    int rc = -1;
+
+   /* PVTCP is initialized. Called with modules_lock taken. */
+   pvtcpOSModStart = NULL;
 
 #if !defined(PVTCP_DISABLE_NETFILTER)
    rc = nf_register_hooks(netfilterHooks, ARRAY_SIZE(netfilterHooks));
@@ -1287,13 +1284,36 @@ out:
 
 
 /**
+ * @brief Called at initialization time.
+ * @return zero
+ */
+static int __init
+Init(void)
+{
+   /* PVTCP will remain dormant until mvpkm is activated */
+   mutex_lock(&modules_lock);
+   pvtcpOSModStart = PvtcpOSModStart;
+   mutex_unlock(&modules_lock);
+   return 0;
+}
+
+
+/**
  *  @brief Called at module unload time. It shuts down pvtcp.
  *  @sideeffect Total and utter destruction.
  */
 
-static void
+static void __exit
 Exit(void)
 {
+   mutex_lock(&modules_lock);
+   if (pvtcpOSModStart) {
+      pvtcpOSModStart = NULL;
+      mutex_unlock(&modules_lock);
+      return;
+   }
+   mutex_unlock(&modules_lock);
+
    PutLoopbackAddr(pvtcpLoopbackOffAddr);
    CommSvc_UnregisterImpl(&pvtcpImpl);
 #if !defined(PVTCP_DISABLE_NETFILTER)
@@ -1305,6 +1325,16 @@ Exit(void)
    CommOS_Log(("%s: Allocations of large datagrams: %llu.\n",
                __FUNCTION__, pvtcpOffDgramAllocations));
 }
+
+
+module_init(Init);
+module_exit(Exit);
+
+/* Module information. */
+MODULE_AUTHOR("VMware, Inc.");
+MODULE_DESCRIPTION(COMM_OS_MOD_NAME_STRING);
+MODULE_VERSION(COMM_OS_MOD_VERSION_STRING);
+MODULE_LICENSE("GPL v2");
 
 
 /*
@@ -2479,6 +2509,7 @@ static inline void
 GetSockOptAIO(PvtcpSock *pvsk)
 {
    CommPacket packet = {
+      .len = sizeof packet,
       .opCode = PVTCP_OP_GETSOCKOPT,
       .flags = 0
    };

@@ -43,11 +43,10 @@
 #include "sii9234_driver.h"
 
 static int en_irq;
-static int g_mutex_cnt;
-static int g_cbus_mutex_cnt;
 #undef	__SII9234_MUTEX_DEBUG__
 #ifdef	__SII9234_MUTEX_DEBUG__
-
+static int g_mutex_cnt;
+static int g_cbus_mutex_cnt;
 #define	sii9234_mutex_lock(prm)	\
 	do { \
 		pr_debug("%s(%d)mutex++:%d\n", __func__, __LINE__,\
@@ -1238,6 +1237,12 @@ static void goto_d3(struct work_struct *work)
 	u8 value;
 
 	pr_debug("sii9234: detection started d3\n");
+
+	if (sii9234->pdata->power_state == false) {
+		pr_info("goto_d3: mhl power_state is false  (exit recommended)\n");
+		goto exit;
+	}
+
 	sii9234_callback_sched = 0;
 
 	sii9234->mhl_status_value.linkmode = MHL_STATUS_CLK_MODE_NORMAL;
@@ -1412,7 +1417,7 @@ unhandled:
 		schedule_work(&sii9234->rgnd_work);
 	}
 exit:
-	pr_info("sii9234_%s end\n",__func__);
+	pr_info("sii9234_%s end\n", __func__);
 }
 #endif
 #ifdef CONFIG_MHL_NEW_CBUS_MSC_CMD
@@ -2038,7 +2043,7 @@ unhandled:
 			schedule_work(&sii9234->rgnd_work);
 		}
 #else
-		if(sii9234->rgnd == RGND_1K) {
+		if (sii9234->rgnd == RGND_1K) {
 			pr_info("Detection failed But RGND 1k is detected");
 			sii9234_disable_irq();
 			if (sii9234->pdata->hw_reset)

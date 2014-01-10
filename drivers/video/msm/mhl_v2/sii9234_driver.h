@@ -503,6 +503,8 @@ static int sii9234_msc_req_locked(struct sii9234_data *sii9234,
 					struct msc_packet *msc_pkt);
 static int sii9234_enqueue_msc_work(struct sii9234_data *sii9234, u8 command,
 		u8 offset, u8 data_1, u8 data_2);
+#else
+static void cbus_command_response(struct sii9234_data *sii9234);
 #endif
 static struct device *sii9244_mhldev;
 extern void mhl_hpd_handler(bool state);
@@ -513,6 +515,5 @@ static u8 sii9234_tmds_control(struct sii9234_data *sii9234, bool enable);
 static bool cbus_command_request(struct sii9234_data *sii9234,
 				 enum cbus_command command,
 				 u8 offset, u8 data);
-static void cbus_command_response(struct sii9234_data *sii9234);
 static irqreturn_t sii9234_irq_thread(int irq, void *data);
 #endif

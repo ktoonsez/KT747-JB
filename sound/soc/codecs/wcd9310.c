@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -6386,11 +6386,6 @@ static const struct file_operations codec_mbhc_debug_ops = {
 	.open = codec_debug_open,
 	.read = codec_mbhc_debug_read,
 };
-#endif
-
-#ifdef CONFIG_SOUND_CONTROL_HAX_GPL
-struct snd_kcontrol_new *gpl_faux_snd_controls_ptr =
-		(struct snd_kcontrol_new *)tabla_snd_controls;
 #endif
 
 static int tabla_codec_probe(struct snd_soc_codec *codec)

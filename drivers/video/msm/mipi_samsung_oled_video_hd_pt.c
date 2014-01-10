@@ -100,7 +100,7 @@ static char panel_cond_set_4_8[] = {
 	0x01, 0x81, 0xC1, 0x00, 0xC3,
 	0xF6, 0xF6, 0xC1
 };
-#elif defined(CONFIG_MACH_M2_KDI)
+#elif defined(CONFIG_MACH_K2_KDI)
 static char panel_cond_set_4_8[] = {
 	0xF8,
 	0x3D, 0x35, 0x00, 0x00, 0x00,
@@ -447,7 +447,7 @@ static char GAMMA_SmartDimming_COND_SET[] = {
 };
 #endif
 
-#if defined(CONFIG_MACH_M2_KDI)
+#if defined(CONFIG_MACH_K2_KDI)
 static char panel_cond_aid_ref[] = {
 	0xF8,
 	0x3D, 0x35, 0x00, 0x00, 0x00,
@@ -787,17 +787,6 @@ static char ACL_COND_SET_33[] = {
 	0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00,
 };
-static char ACL_COND_SET_20[] = {
-	0xC1,
-	0x47, 0x53, 0x13, 0x53, 0x00, 0x00,
-	0x02, 0xCF, 0x00, 0x00, 0x04, 0xFF,
-	0x00, 0x00, 0x00, 0x00, 0x00,
-	0x01, 0x04, 0x07, 0x0A, 0x0D, 0x10,
-	0x12, 0x15, 0x18, 0x1B, 0x1E,
-	/* adding 8 byte padding*/
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-};
 
 static struct dsi_cmd_desc DSI_CMD_ACL_50 = {
 DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(ACL_COND_SET_50), ACL_COND_SET_50 };
@@ -805,8 +794,7 @@ static struct dsi_cmd_desc DSI_CMD_ACL_40 = {
 DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(ACL_COND_SET_40), ACL_COND_SET_40 };
 static struct dsi_cmd_desc DSI_CMD_ACL_33 = {
 DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(ACL_COND_SET_33), ACL_COND_SET_33 };
-static struct dsi_cmd_desc DSI_CMD_ACL_20 = {
-DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(ACL_COND_SET_20), ACL_COND_SET_20 };
+
 static struct dsi_cmd_desc_LCD lcd_acl_table[] = {
 	{0, "20", NULL},
 	{0, "30", NULL},
@@ -1102,7 +1090,7 @@ static int get_candela_index(int bl_level)
 		backlightlevel = GAMMA_250CD;
 		break;
 	case 255:
-		if (mipi_pd.msd->dstat.auto_brightness == 1)
+		if (mipi_pd.msd->dstat.auto_brightness > 0)
 			backlightlevel = GAMMA_300CD;
 		else
 			backlightlevel = GAMMA_250CD;
@@ -1284,7 +1272,7 @@ static int  aid_operation(int lux)
 		pr_info("%s LCD is 4.65 inch", __func__);
 	} else {/* 4.8 LCD_ID*/
 		if (lux == 0) {
-#if defined(CONFIG_MACH_M2_KDI)
+#if defined(CONFIG_MACH_K2_KDI)
 			panel_cond_aid_ref[1] = 0x3D;
 #else
 			panel_cond_aid_ref[1] = 0x19;
@@ -1293,7 +1281,7 @@ static int  aid_operation(int lux)
 			etc_cond_set3_aid_ref[9] = 0x40;
 			aid_status = 0;
 		} else if (lux >= 190) {
-#if defined(CONFIG_MACH_M2_KDI)
+#if defined(CONFIG_MACH_K2_KDI)
 			panel_cond_aid_ref[1] = 0x3D;
 #else
 			panel_cond_aid_ref[1] = 0x19;
@@ -1304,8 +1292,8 @@ static int  aid_operation(int lux)
 		} else if (lux >= 110) {
 			ratio = aid_below_110_ratio_table[9][1];
 
-#if defined(CONFIG_MACH_M2_KDI)
-			panel_cond_aid_ref[1] = 0x7D;
+#if defined(CONFIG_MACH_K2_KDI)
+			panel_cond_aid_ref[1] = 0x3D;
 #else
 			panel_cond_aid_ref[1] = 0x59;
 #endif
@@ -1316,8 +1304,8 @@ static int  aid_operation(int lux)
 			index = (lux / 10) - 2;
 			ratio = aid_below_110_ratio_table[index][1];
 
-#if defined(CONFIG_MACH_M2_KDI)
-			panel_cond_aid_ref[1] = 0x7D;
+#if defined(CONFIG_MACH_K2_KDI)
+			panel_cond_aid_ref[1] = 0x3D;
 #else
 			panel_cond_aid_ref[1] = 0x59;
 #endif
@@ -1504,11 +1492,7 @@ static int prepare_brightness_control_cmd_array(int lcd_type, int bl_level)
 	return cmds_send_flag;
 }
 static struct mipi_panel_data mipi_pd = {
-#if defined (CONFIG_MACH_M2_KDI)
-        .panel_name     = "SMD_AMS480GY10-0\n",
-#else
 	.panel_name	= "SMD_AMS465GS0x\n",
-#endif
 	.ready_to_on	= {samsung_panel_ready_to_on_cmds
 				, ARRAY_SIZE(samsung_panel_ready_to_on_cmds)},
 	.ready_to_on_4_8 = {samsung_panel_ready_to_on_cmds_4_8
@@ -1590,7 +1574,7 @@ static int __init mipi_cmd_samsung_oled_qhd_pt_init(void)
 #endif
 	pinfo.xres = 720;
 	pinfo.yres = 1280;
-	pinfo.height = 107;
+	pinfo.height = 106;
 	pinfo.width = 60;
 	pinfo.mode2_xres = 0;
 	pinfo.mode2_yres = 0;

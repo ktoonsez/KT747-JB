@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2007 Google Inc,
  *  Copyright (C) 2003 Deep Blue Solutions, Ltd, All Rights Reserved.
- *  Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ *  Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -145,7 +145,7 @@ static inline unsigned short msmsdcc_get_nr_sg(struct msmsdcc_host *host)
 	unsigned short ret = NR_SG;
 
 	if (host->is_sps_mode) {
-		ret = SPS_MAX_DESCS;
+		ret = SPS_MAX_DESCS / 16;
 	} else { /* DMA or PIO mode */
 		if (NR_SG > MAX_NR_SG_DMA_PIO)
 			ret = MAX_NR_SG_DMA_PIO;
@@ -1374,6 +1374,7 @@ static void msmsdcc_sg_consumed(struct msmsdcc_host *host,
 				unsigned int length)
 {
 	struct msmsdcc_pio_data *pio = &host->pio;
+	if(host->curr.data != NULL){
 
 	if (host->curr.data->flags & MMC_DATA_READ) {
 		if (length > pio->sg_miter.consumed)
@@ -1387,6 +1388,8 @@ static void msmsdcc_sg_consumed(struct msmsdcc_host *host,
 	} else
 		if (length < pio->sg_miter.consumed)
 			pio->sg_miter.consumed = length;
+	} else
+		printk(KERN_INFO "%s:host->curr.data is NULL",__func__);
 }
 
 static void msmsdcc_sg_start(struct msmsdcc_host *host)
@@ -4217,17 +4220,18 @@ static void msmsdcc_late_resume(struct early_suspend *h)
 };
 #endif
 
-void msmsdcc_print_regs(const char *name, void __iomem *base,
-			unsigned int no_of_regs)
+static void msmsdcc_print_regs(const char *name, void __iomem *base,
+			u32 phys_base, unsigned int no_of_regs)
 {
 	unsigned int i;
 
 	if (!base)
 		return;
-	pr_err("===== %s: Register Dumps @base=0x%x =====\n",
-		name, (u32)base);
+
+	pr_err("===== %s: Register Dumps @phys_base=0x%x, @virt_base=0x%x"
+		" =====\n", name, phys_base, (u32)base);
 	for (i = 0; i < no_of_regs; i = i + 4) {
-		pr_err("Reg=0x%.2x: 0x%.8x, 0x%.8x, 0x%.8x, 0x%.8x\n", i*4,
+		pr_err("Reg=0x%.2x: 0x%.8x, 0x%.8x, 0x%.8x, 0x%.8x.\n", i*4,
 			(u32)readl_relaxed(base + i*4),
 			(u32)readl_relaxed(base + ((i+1)*4)),
 			(u32)readl_relaxed(base + ((i+2)*4)),
@@ -4249,7 +4253,8 @@ static void msmsdcc_dump_sdcc_state(struct msmsdcc_host *host)
 
 	/* Now dump SDCC registers. Don't print FIFO registers */
 	if (host->clks_on) {
-		msmsdcc_print_regs("SDCC-CORE", host->base, 28);
+		msmsdcc_print_regs("SDCC-CORE", host->base, 
+			host->core_memres->start, 28);
 		pr_err("%s: MCI_TEST_INPUT = 0x%.8x\n",
 			mmc_hostname(host->mmc),
 			readl_relaxed(host->base + MCI_TEST_INPUT));
@@ -4262,10 +4267,14 @@ static void msmsdcc_dump_sdcc_state(struct msmsdcc_host *host)
 			pr_err("%s: ADM mode: busy=%d, chnl=%d, crci=%d\n",
 				mmc_hostname(host->mmc), host->dma.busy,
 				host->dma.channel, host->dma.crci);
-		else if (host->is_sps_mode)
+		else if (host->is_sps_mode) {
+			if (host->sps.busy)
+				msmsdcc_print_regs("SDCC-DML", host->dml_base,
+					host->dml_memres->start,
+					16);
 			pr_err("%s: SPS mode: busy=%d\n",
 				mmc_hostname(host->mmc), host->sps.busy);
-
+		}
 		pr_err("%s: xfer_size=%d, data_xfered=%d, xfer_remain=%d\n",
 			mmc_hostname(host->mmc), host->curr.xfer_size,
 			host->curr.data_xfered, host->curr.xfer_remain);
@@ -4440,9 +4449,10 @@ static ssize_t t_flash_detect_show(struct device *dev,
 				   struct device_attribute *attr, char *buf)
 {
 	struct mmc_host *mmc = dev_get_drvdata(dev);
+ #if  !defined(CONFIG_MACH_COMANCHE)
 	struct msmsdcc_host *host = mmc_priv(mmc);
 	unsigned int detect;
-
+#endif
 #ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
 	if (host->plat->status_gpio)
 		detect = gpio_get_value(host->plat->status_gpio);

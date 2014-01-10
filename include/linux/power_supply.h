@@ -136,11 +136,6 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
-#if defined(CONFIG_MACH_M2_KDI)
-        POWER_SUPPLY_PROP_SUSPEND,
-        POWER_SUPPLY_PROP_RESUME,
-#endif
-
 };
 
 enum power_supply_type {
@@ -161,9 +156,6 @@ enum power_supply_type {
 #endif
 	POWER_SUPPLY_TYPE_OTG,
 	POWER_SUPPLY_TYPE_UARTOFF,
-#if defined (CONFIG_MACH_M2_KDI)
-        POWER_SUPPLY_TYPE_HDMI,
-#endif
 };
 
 /*

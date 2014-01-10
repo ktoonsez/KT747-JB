@@ -1,7 +1,7 @@
 /* arch/arm/mach-msm/memory.c
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -341,7 +341,7 @@ static int support_2gb_ddr(void)
 	if (system_rev >= BOARD_REV14)
 #elif defined(CONFIG_MACH_M2_VZW) /* D2_VZW, D2_USCC, D2_MPCS, D2_CRIKET */
 	if (system_rev >= BOARD_REV15)
-#elif defined(CONFIG_MACH_M2_DCM) || defined(CONFIG_MACH_M2_KDI)
+#elif defined(CONFIG_MACH_M2_DCM) || defined(CONFIG_MACH_K2_KDI)
 	if (system_rev >= BOARD_REV08)
 #else
 	if (false)
