@@ -79,6 +79,16 @@ scripts/genksyms/keywords.c
 scripts/genksyms/lex.c
 scripts/genksyms/parse.c
 scripts/genksyms/parse.h
+scripts/genksyms/keywords.hash.c
+scripts/genksyms/lex.lex.c
+scripts/genksyms/parse.tab.c
+scripts/genksyms/parse.tab.h
+scripts/kconfig/zconf.lex.c
+scripts/selinux/genheaders/genheaders
+scripts/selinux/mdp/mdp
+security/selinux/av_permissions.h
+security/selinux/flask.h
+net/wireless/regdb.c
 
 #
 # Top-level generic files

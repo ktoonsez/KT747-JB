@@ -38,7 +38,7 @@ rm $(find $INITRAMFS_DEST -name EMPTY_DIRECTORY -print)
 rm -rf $(find $INITRAMFS_DEST -name .git -print)
 
 echo "Make the kernel"
-make KT747_d2vzw_defconfig
+make KT747_defconfig VARIANT_DEFCONFIG=msm8960_m2_vzw_defconfig
 
 HOST_CHECK=`uname -n`
 if [ $HOST_CHECK = 'ktoonsez-VirtualBox' ]; then
