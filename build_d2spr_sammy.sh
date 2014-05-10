@@ -38,7 +38,7 @@ rm $(find $INITRAMFS_DEST -name EMPTY_DIRECTORY -print)
 rm -rf $(find $INITRAMFS_DEST -name .git -print)
 
 echo "Make the kernel"
-make VARIANT_DEFCONFIG=msm8960_m2_spr_defconfig SELINUX_DEFCONFIG=selinux_defconfig KT747_defconfig
+make VARIANT_DEFCONFIG=msm8960_m2_spr_defconfig KT747_defconfig SELINUX_DEFCONFIG=selinux_defconfig
 
 HOST_CHECK=`uname -n`
 if [ $HOST_CHECK = 'ktoonsez-VirtualBox' ]; then
@@ -63,7 +63,7 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 
 	echo "Make boot.img"
 	./mkbootfs $INITRAMFS_DEST | gzip > $PACKAGEDIR/ramdisk.gz
-	./mkbootimg --cmdline 'console = null androidboot.selinux=permissive androidboot.hardware=qcom user_debug = 31' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdiskaddr 0x81500000 --output $PACKAGEDIR/boot.img 
+	./mkbootimg --cmdline 'console=null androidboot.hardware=qcom user_debug=31' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdiskaddr 0x81500000 --output $PACKAGEDIR/boot.img 
 	export curdate=`date "+%m-%d-%Y"`
 	cd $PACKAGEDIR
 	cp -R ../META-INF .
