@@ -2,9 +2,9 @@
 export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
-export INITRAMFS_SOURCE=`readlink -f ..`/Ramdisks/TW_JB_ND8
+export INITRAMFS_SOURCE=`readlink -f ..`/Ramdisks/TW_KK_ND8
 export CONFIG_SAMMY_BUILD=y
-export PACKAGEDIR=$PARENT_DIR/Packages/TW_JB_SPR
+export PACKAGEDIR=$PARENT_DIR/Packages/TW_KK_SPR
 #Enable FIPS mode
 export USE_SEC_FIPS_MODE=true
 export ARCH=arm
@@ -69,8 +69,8 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	cp -R ../META-INF .
 	rm ramdisk.gz
 	rm zImage
-	rm ../KT747-TW-JB-4.4-SPR*.zip
-	zip -r ../KT747-TW-JB-4.4-SPR-$curdate.zip .
+	rm ../KT747-TW-KK-4.4-SPR*.zip
+	zip -r ../KT747-TW-KK-4.4-SPR-$curdate.zip .
 	cd $KERNELDIR
 else
 	echo "KERNEL DID NOT BUILD! no zImage exist"
