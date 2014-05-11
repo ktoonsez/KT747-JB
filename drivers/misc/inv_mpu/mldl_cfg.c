@@ -49,6 +49,8 @@
 #define STANDBY 1
 #define FEATURE_REDUCE_DMPTIME
 
+extern void set_gps_status(bool stat);
+
 struct motion_int_data {
 	unsigned char pwr_mnt[2];
 	unsigned char cfg;
@@ -1686,6 +1688,10 @@ int inv_mpu_resume(struct mldl_cfg *mldl_cfg,
 	slave_handle[EXT_SLAVE_TYPE_COMPASS] = compass_handle;
 	slave_handle[EXT_SLAVE_TYPE_PRESSURE] = pressure_handle;
 	pr_info("Sensors set: %lx\n", sensors);
+	if (sensors == 1023)
+		set_gps_status(true);
+	else if (sensors == 112)
+		set_gps_status(false);
 
 	mldl_print_cfg(mldl_cfg);
 
