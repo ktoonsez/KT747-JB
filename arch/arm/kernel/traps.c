@@ -173,7 +173,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
 			break;
 		}
 	}
-	printk("%sCode: %s\n", lvl, str);
+	//printk("%sCode: %s\n", lvl, str);
 
 	set_fs(fs);
 }
@@ -452,8 +452,8 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 
 #ifdef CONFIG_DEBUG_USER
 	if (user_debug & UDBG_UNDEFINED) {
-		printk(KERN_INFO "%s (%d): undefined instruction: pc=%p\n",
-			current->comm, task_pid_nr(current), pc);
+		//printk(KERN_INFO "%s (%d): undefined instruction: pc=%p\n",
+		//	current->comm, task_pid_nr(current), pc);
 		dump_instr(KERN_INFO, regs);
 	}
 #endif
