@@ -9,7 +9,7 @@
  *
  */
 
-#define SEC_TOUCHKEY_DEBUG
+//#define SEC_TOUCHKEY_DEBUG
 /* #define SEC_TOUCHKEY_VERBOSE_DEBUG */
 
 #include <linux/module.h>
@@ -183,6 +183,13 @@ static ssize_t brightness_level_show(struct device *dev,
 	return count;
 }
 
+extern void boostpulse_relay_kt(void);
+static bool kt_is_active_benabled = false;
+void kt_is_active_benabled_touchkey(bool val)
+{
+	kt_is_active_benabled = val;
+}
+
 static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 {
 	struct cypress_touchkey_info *info = dev_id;
@@ -233,7 +240,11 @@ static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 #if defined(SEC_TOUCHKEY_DEBUG)
 	TOUCHKEY_LOG(info->keycode[code], press);
 #endif
-
+	if (kt_is_active_benabled && press == 1 && (info->keycode[code] == 158 || info->keycode[code] == 139))
+	{
+		boostpulse_relay_kt();
+		//pr_alert("KEY_PRESS: %d-%d\n", info->keycode[code], press);
+	}
 	if (touch_is_pressed && press) {
 		printk(KERN_ERR "[TouchKey] don't send event because touch is pressed.\n");
 		printk(KERN_ERR "[TouchKey] touch_pressed = %d\n",
@@ -281,9 +292,9 @@ static int cypress_touchkey_auto_cal(struct cypress_touchkey_info *dev_info)
 
 		count = i2c_smbus_write_i2c_block_data(info->client,
 				CYPRESS_GEN, 4, data);
-		printk(KERN_DEBUG
-				"[TouchKey] data[0]=%x data[1]=%x data[2]=%x data[3]=%x\n",
-				data[0], data[1], data[2], data[3]);
+		//printk(KERN_DEBUG
+		//		"[TouchKey] data[0]=%x data[1]=%x data[2]=%x data[3]=%x\n",
+		//		data[0], data[1], data[2], data[3]);
 
 		msleep(50);
 
@@ -842,7 +853,7 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 	int ic_fw_ver;
 
 	struct device *sec_touchkey;
-	printk("\n[Cypress Tkey] Inside cypress_touchkey_probe \n");
+	//printk("\n[Cypress Tkey] Inside cypress_touchkey_probe \n");
 	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C))
 		return -EIO;
 

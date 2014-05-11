@@ -67,7 +67,9 @@ fail:
 static int update_cpu_max_freq(int cpu, uint32_t max_freq)
 {
 	int ret = 0;
-
+	
+	if (max_freq > 1512000) max_freq = 1512000;
+	
 	ret = msm_cpufreq_set_freq_limits(cpu, MSM_CPUFREQ_NO_LIMIT, max_freq);
 	if (ret)
 		return ret;

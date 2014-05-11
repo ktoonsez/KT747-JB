@@ -102,6 +102,10 @@ static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				unsigned int event);
 
+static bool boostpulse_relayf = false;
+static unsigned int boostpulse_relay_sr = 0;
+static unsigned int Lboostpulse_value = 1134000;
+
 #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
 static
 #endif
@@ -1064,6 +1068,20 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			__cpufreq_driver_target(policy, freq,
 				CPUFREQ_RELATION_L);
 		}
+	}
+}
+
+extern void ondemand_is_active(bool val);
+
+void boostpulse_relay_od(void)
+{
+	if (Lboostpulse_value > 0)
+	{
+		//pr_info("BOOST_PULSE_FROM_INTERACTIVE");
+		if (dbs_tuners_ins.sampling_rate != min_sampling_rate)
+			boostpulse_relay_sr = dbs_tuners_ins.sampling_rate;
+		boostpulse_relayf = true;
+		dbs_tuners_ins.sampling_rate = min_sampling_rate;
 	}
 }
 

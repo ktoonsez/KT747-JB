@@ -173,6 +173,9 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
 #define CPUFREQ_GOV_STOP   2
 #define CPUFREQ_GOV_LIMITS 3
 
+extern int GLOBALKT_MIN_FREQ_LIMIT;// = 378000;
+extern int GLOBALKT_MAX_FREQ_LIMIT;// = 1512000;
+
 struct cpufreq_governor {
 	char	name[CPUFREQ_NAME_LEN];
 	int	(*governor)	(struct cpufreq_policy *policy,
@@ -370,6 +373,18 @@ int get_min_freq(void);
 #define UPDATE_NOW_BITS		0xFF
 
 enum {
+	TOUCH_BOOSTER_FIRST = 1,
+	TOUCH_BOOSTER_SECOND,
+	TOUCH_BOOSTER,
+	UNI_PRO,
+	APPS_MIN,
+	APPS_MAX,
+	USER_MIN,
+	USER_MAX
+};
+
+
+enum {
 	DVFS_NO_ID			= 0,
 
 	/* need to update now */
@@ -384,6 +399,7 @@ enum {
 	DVFS_MAX_ID
 };
 
+#define MULTI_FACTOR 10
 
 int set_freq_limit(unsigned long id, unsigned int freq);
 
@@ -393,6 +409,26 @@ void set_min_lock(int freq);
 void set_max_lock(int freq);
 
 #endif
+
+enum {
+	TOUCH_BOOSTER_FIRST_START = TOUCH_BOOSTER_FIRST * MULTI_FACTOR,
+	TOUCH_BOOSTER_FIRST_STOP = TOUCH_BOOSTER_FIRST_START + 1,
+	TOUCH_BOOSTER_SECOND_START = TOUCH_BOOSTER_SECOND * MULTI_FACTOR,
+	TOUCH_BOOSTER_SECOND_STOP = TOUCH_BOOSTER_SECOND_START + 1,
+	TOUCH_BOOSTER_START = TOUCH_BOOSTER * MULTI_FACTOR,
+	TOUCH_BOOSTER_STOP = TOUCH_BOOSTER_START + 1,
+	UNI_PRO_START = UNI_PRO * MULTI_FACTOR,
+	UNI_PRO_STOP = UNI_PRO_START + 1,
+	APPS_MIN_START = APPS_MIN * MULTI_FACTOR,
+	APPS_MIN_STOP = APPS_MIN_START + 1,
+	APPS_MAX_START = APPS_MAX * MULTI_FACTOR,
+	APPS_MAX_STOP = APPS_MAX_START + 1,
+	USER_MIN_START = USER_MIN * MULTI_FACTOR,
+	USER_MIN_STOP = USER_MIN_START + 1,
+	USER_MAX_START = USER_MAX * MULTI_FACTOR,
+	USER_MAX_STOP = USER_MAX_START + 1,
+	UNREGISTERED = 0
+};
 
 /*********************************************************************
  *                       CPUFREQ DEFAULT GOVERNOR                    *

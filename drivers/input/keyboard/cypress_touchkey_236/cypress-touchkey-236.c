@@ -497,6 +497,13 @@ static ssize_t brightness_level_show(struct device *dev,
 	return count;
 }
 
+extern void boostpulse_relay_kt(void);
+static bool kt_is_active_benabled = false;
+void kt_is_active_benabled_touchkey(bool val)
+{
+	kt_is_active_benabled = val;
+}
+
 #if defined(TK_INFORM_CHARGER)
 static int touchkey_ta_setting(struct cypress_touchkey_info *info)
 {
@@ -810,6 +817,11 @@ static irqreturn_t cypress_touchkey_interrupt(int irq, void *dev_id)
 #if defined(SEC_TOUCHKEY_DEBUG)
 	TOUCHKEY_LOG(info->keycode[code], press);
 #endif
+	if (kt_is_active_benabled && press == 1 && (info->keycode[code] == 158 || info->keycode[code] == 139))
+	{
+		boostpulse_relay_kt();
+		//pr_alert("KEY_PRESS: %d-%d\n", info->keycode[code], press);
+	}
 
 	input_report_key(info->input_dev, info->keycode[code], press);
 	input_sync(info->input_dev);
@@ -854,9 +866,9 @@ static int cypress_touchkey_auto_cal(struct cypress_touchkey_info *dev_info)
 		data[3] = 0x01;
 
 		count = i2c_touchkey_write(info->client, data, 4);
-		printk(KERN_DEBUG
-				"[TouchKey] data[0]=%x data[1]=%x data[2]=%x data[3]=%x\n",
-				data[0], data[1], data[2], data[3]);
+		//printk(KERN_DEBUG
+		//		"[TouchKey] data[0]=%x data[1]=%x data[2]=%x data[3]=%x\n",
+		//		data[0], data[1], data[2], data[3]);
 
 		msleep(130);
 

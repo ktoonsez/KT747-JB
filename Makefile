@@ -576,6 +576,8 @@ ifneq ($(CONFIG_FRAME_WARN),0)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
 endif
 
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
+
 # Force gcc to behave correct even for buggy distributions
 ifndef CONFIG_CC_STACKPROTECTOR
 KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
