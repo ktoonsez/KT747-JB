@@ -888,9 +888,10 @@ static int qseecom_unload_app(struct qseecom_dev_handle *data)
 			pr_err("scm_call to unload app (id = %d) failed\n",
 							req.app_id);
 			return -EFAULT;
-		} else {
-			pr_warn("App id %d now unloaded\n", req.app_id);
-		}
+		} 
+		//else {
+		//	pr_warn("App id %d now unloaded\n", req.app_id);
+		//}
 		if (resp.result == QSEOS_RESULT_INCOMPLETE) {
 			ret = __qseecom_process_incomplete_cmd(data, &resp);
 			if (ret) {
