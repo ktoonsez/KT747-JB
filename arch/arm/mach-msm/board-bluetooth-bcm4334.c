@@ -41,6 +41,7 @@
 #define BT_LPM_ENABLE
 
 static struct rfkill *bt_rfkill;
+extern void set_bluetooth_state(unsigned int val);
 
 #ifdef BT_UART_CFG
 static unsigned bt_uart_on_table[] = {
@@ -95,6 +96,7 @@ static int bcm4334_bt_rfkill_set_power(void *data, bool blocked)
 	}
 #endif
 		pr_info("[BT] Bluetooth Power Off.\n");
+		set_bluetooth_state(0);
 		gpio_set_value(gpio_rev(BT_EN), 0);
 	}
 	return 0;

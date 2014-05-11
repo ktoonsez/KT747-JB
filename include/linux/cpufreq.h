@@ -348,6 +348,17 @@ static inline unsigned int cpufreq_quick_get_max(unsigned int cpu)
 }
 #endif
 
+#define LOW_MAX_FREQ_LIMIT 1188000
+
+#define FREQ_TABLE_SIZE		38
+#define FREQ_TABLE_SIZE_OFFSET	6
+#define FREQ_STEPS		30
+
+enum {
+	SET_MIN = 0,
+	SET_MAX
+};
+
 #ifdef CONFIG_SEC_DVFS
 enum {
 	BOOT_CPU = 0,
