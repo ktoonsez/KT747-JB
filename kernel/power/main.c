@@ -525,8 +525,8 @@ static int verify_cpufreq_target(unsigned int target)
 		return -EFAULT;
 
 	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
-		if (table[i].frequency < MIN_FREQ_LIMIT ||
-				table[i].frequency > MAX_FREQ_LIMIT)
+		if (table[i].frequency < GLOBALKT_MIN_FREQ_LIMIT ||
+				table[i].frequency > GLOBALKT_MAX_FREQ_LIMIT)
 			continue;
 
 		if (target == table[i].frequency)
@@ -538,8 +538,8 @@ static int verify_cpufreq_target(unsigned int target)
 
 int set_freq_limit(unsigned long id, unsigned int freq)
 {
-	unsigned int min = MIN_FREQ_LIMIT;
-	unsigned int max = MAX_FREQ_LIMIT;
+	unsigned int min = GLOBALKT_MIN_FREQ_LIMIT;
+	unsigned int max = GLOBALKT_MAX_FREQ_LIMIT;
 
 	if (freq != 0 && freq != -1 && verify_cpufreq_target(freq))
 		return -EINVAL;
@@ -686,7 +686,7 @@ static ssize_t cpufreq_table_show(struct kobject *kobj,
 	for (i = count; i >= 0; i--) {
 		freq = table[i].frequency;
 
-		if (freq < MIN_FREQ_LIMIT || freq > MAX_FREQ_LIMIT)
+		if (freq < GLOBALKT_MIN_FREQ_LIMIT || freq > GLOBALKT_MAX_FREQ_LIMIT)
 			continue;
 
 		len += sprintf(buf + len, "%u ", freq);
@@ -775,9 +775,9 @@ static int __init pm_init(void)
 		return -ENOMEM;
 
 #ifdef CONFIG_SEC_DVFS
-	apps_min_freq = MIN_FREQ_LIMIT;
-	apps_max_freq = MAX_FREQ_LIMIT;
-	thermald_max_freq = MAX_FREQ_LIMIT;
+	apps_min_freq = GLOBALKT_MIN_FREQ_LIMIT;
+	apps_max_freq = GLOBALKT_MAX_FREQ_LIMIT;
+	thermald_max_freq = GLOBALKT_MAX_FREQ_LIMIT;
 #endif
 
 	return sysfs_create_group(power_kobj, &attr_group);
