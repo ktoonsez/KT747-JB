@@ -125,7 +125,7 @@ static int32_t ImmVibeSPI_ForceOut_AmpDisable(u_int8_t nActuatorIndex)
 		else
 			gpio_direction_output(vibrator_drvdata.haptic_pwr_en_gpio,0);
 #endif
-		printk(KERN_DEBUG "tspdrv: %s\n", __func__);
+		//printk(KERN_DEBUG "tspdrv: %s\n", __func__);
 #if defined(CONFIG_MOTOR_DRV_MAX77693)
 		max77693_vibtonz_en(0);
 #endif
@@ -154,7 +154,7 @@ static int32_t ImmVibeSPI_ForceOut_AmpEnable(u_int8_t nActuatorIndex)
 		else
 			gpio_direction_output(vibrator_drvdata.haptic_pwr_en_gpio,1);
 #endif
-		printk(KERN_DEBUG "tspdrv: %s\n", __func__);
+		//printk(KERN_DEBUG "tspdrv: %s\n", __func__);
 #if defined(CONFIG_MOTOR_DRV_MAX77693)
 		max77693_vibtonz_en(1);
 #endif

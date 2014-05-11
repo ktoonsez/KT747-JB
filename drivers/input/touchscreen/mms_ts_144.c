@@ -410,8 +410,8 @@ static void change_dvfs_lock(struct work_struct *work)
 	if (ret < 0)
 		pr_err("%s: 1booster stop failed(%d)\n",\
 					__func__, __LINE__);
-	else
-		pr_info("[TSP] %s", __func__);
+	//else
+	//	pr_info("[TSP] %s", __func__);
 }
 
 static void set_dvfs_off(struct work_struct *work)
@@ -423,7 +423,7 @@ static void set_dvfs_off(struct work_struct *work)
 	info->dvfs_lock_status = false;
 	mutex_unlock(&info->dvfs_lock);
 
-	pr_info("[TSP] DVFS Off!");
+	//pr_info("[TSP] DVFS Off!");
 }
 
 static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
@@ -447,7 +447,7 @@ static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
 			schedule_delayed_work(&info->work_dvfs_chg,
 				msecs_to_jiffies(TOUCH_BOOSTER_CHG_TIME));
 			info->dvfs_lock_status = true;
-			pr_info("[TSP] DVFS On!");
+			//pr_info("[TSP] DVFS On!");
 		}
 	} else if (on == 2) {
 		cancel_delayed_work(&info->work_dvfs_off);
@@ -481,7 +481,7 @@ static void release_all_fingers(struct mms_ts_info *info)
 	input_sync(info->input_dev);
 #ifdef TOUCH_BOOSTER
 	set_dvfs_lock(info, 2);
-	pr_info("[TSP] dvfs_lock free.\n ");
+	//pr_info("[TSP] dvfs_lock free.\n ");
 #endif
 }
 
@@ -660,8 +660,8 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 				"finger id[%d]: x=%d y=%d p=%d w=%d major=%d minor=%d angle=%d palm=%d\n"
 				, id, x, y, tmp[5], tmp[4], tmp[6], tmp[7]
 				, angle, palm);
-#else
-			dev_notice(&client->dev, "finger [%d] up\n", id);
+//#else
+//			dev_notice(&client->dev, "finger [%d] up\n", id);
 #endif
 			input_mt_slot(info->input_dev, id);
 			input_mt_report_slot_state(info->input_dev,
@@ -701,7 +701,7 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 #else
 		if (info->finger_state[id] == 0) {
 			info->finger_state[id] = 1;
-			dev_notice(&client->dev, "finger [%d] down\n", id);
+			//dev_notice(&client->dev, "finger [%d] down\n", id);
 		}
 #endif
 	}
