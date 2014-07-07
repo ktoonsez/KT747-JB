@@ -1354,6 +1354,7 @@ static DEVICE_ATTR(auto_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 
 #endif
 
+
 #ifdef READ_REGISTER_ESD
 #define ID_E5H_IDLE 0x80
 #define ID_E5H_IDLE_2 0x84
